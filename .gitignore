@@ -1,0 +1,48 @@
+# ---- Dataset / footage: MUST NOT be committed (challenge rule) ----
+*.mp4
+*.avi
+*.mov
+CCTV Footage/
+data/footage/
+data/pos_transactions_raw.csv
+# real Purplle POS (amounts/times) — derived from the dataset; regenerate via pipeline/pos.py
+data/pos_transactions.csv
+*.xlsx
+
+# ---- Model weights (auto-downloaded) ----
+*.pt
+*.onnx
+*.engine
+yolo*.pt
+
+# ---- Pipeline outputs ----
+data/events*.jsonl
+data/events*.json
+data/_vlm_crops/
+data/_zonecheck/
+_calib/
+_frames/
+_layout_image.png
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+.mypy_cache/
+.ruff_cache/
+
+# ---- Postgres volume / docker ----
+pgdata/
+
+# ---- OS / IDE ----
+.DS_Store
+.idea/
+.vscode/
+*.log

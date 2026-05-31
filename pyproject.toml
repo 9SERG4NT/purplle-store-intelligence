@@ -1,0 +1,28 @@
+[project]
+name = "store-intelligence"
+version = "1.0.0"
+description = "Apex Retail Store Intelligence — CCTV -> events -> real-time analytics API"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".", "pipeline"]
+addopts = "-q"
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.coverage.run]
+source = ["app", "pipeline"]
+branch = false
+omit = [
+    # require a GPU/video/network; exercised by the live pipeline run, not unit tests
+    "pipeline/detect.py",
+    "pipeline/staff_vlm.py",
+    "pipeline/appearance.py",
+    "scripts/*",
+    "tests/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+exclude_lines = ["pragma: no cover", "if __name__ == .__main__.:", "raise NotImplementedError"]

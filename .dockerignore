@@ -1,0 +1,25 @@
+# Build context hygiene: keep the API image small and free of footage/secrets.
+.git
+.gitignore
+.venv
+venv
+__pycache__
+*.pyc
+.pytest_cache
+.coverage
+htmlcov
+*.mp4
+*.avi
+*.mov
+*.xlsx
+*.pt
+*.onnx
+CCTV Footage/
+data/footage/
+data/events*.jsonl
+_calib/
+_frames/
+.agents/
+docs/
+*.md
+!README.md

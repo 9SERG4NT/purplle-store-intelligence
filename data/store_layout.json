@@ -1,0 +1,119 @@
+{
+  "store_id": "STORE_BLR_002",
+  "pos_store_id": "ST1008",
+  "store_name": "Brigade Road, Bangalore",
+  "city": "Bangalore",
+  "timezone": "Asia/Kolkata",
+  "open_hours": { "open": "10:00", "close": "22:00" },
+  "_coordinate_note": "All polygon / line coordinates are NORMALISED to [0,1] (x = fraction of frame width, y = fraction of frame height) so they are resolution-independent. Hand-calibrated from CAM sample frames (see scripts/calibrate_zones.py).",
+  "_clip_note": "Clips are ~2.5-min excerpts. The on-screen DVR clock reads ~20:11 but is treated as illustrative; we anchor the event window to clip_start_local=20:20 IST so billing-zone presence aligns with the 20:25:04 POS transaction. This is a documented demo-alignment assumption (see DESIGN.md).",
+  "cameras": [
+    {
+      "camera_id": "CAM_ENTRY_01",
+      "source_file": "CAM 3.mp4",
+      "role": "entry",
+      "fps_sample": 6,
+      "clip_start_local": "2026-04-10T20:20:00+05:30",
+      "description": "Entry/exit threshold (overhead). Foot traffic crosses the glass walkway on the right moving vertically; the counting line is horizontal across that walkway. Inbound = moving DOWN into the store floor (toward higher y), calibrated from foot-trajectory analysis (scripts/_diag_entry.py).",
+      "entry_line": [[0.55, 0.70], [1.0, 0.70]],
+      "inside_point": [0.82, 0.97],
+      "zones": ["ENTRY"]
+    },
+    {
+      "camera_id": "CAM_FLOOR_01",
+      "source_file": "CAM 1.mp4",
+      "role": "floor",
+      "fps_sample": 5,
+      "clip_start_local": "2026-04-10T20:20:00+05:30",
+      "description": "Main floor - skincare wall (The Face Shop, Good Vibes, DermDoc, Minimalist, Aqualogica) plus a makeup studio table.",
+      "zones": ["SKINCARE", "MAKEUP_STUDIO"]
+    },
+    {
+      "camera_id": "CAM_FLOOR_02",
+      "source_file": "CAM 2.mp4",
+      "role": "floor",
+      "fps_sample": 5,
+      "clip_start_local": "2026-04-10T20:20:00+05:30",
+      "description": "Main floor - makeup brand wall (Maybelline, Faces Canada, Lakme, Swiss Beauty) plus the nail/fragrance unit.",
+      "zones": ["MAKEUP", "NAIL_FRAGRANCE"]
+    },
+    {
+      "camera_id": "CAM_BILLING_01",
+      "source_file": "CAM 5.mp4",
+      "role": "billing",
+      "fps_sample": 5,
+      "clip_start_local": "2026-04-10T20:20:00+05:30",
+      "description": "Cash counter / billing. Counter and POS operator on the left (staff side); customers queue on the customer side in front of the counter.",
+      "staff_region": [[0.0, 0.0], [0.44, 0.0], [0.44, 1.0], [0.0, 1.0]],
+      "queue_region": [[0.45, 0.30], [0.82, 0.30], [0.82, 0.99], [0.45, 0.99]],
+      "zones": ["BILLING"]
+    },
+    {
+      "camera_id": "CAM_BACK_01",
+      "source_file": "CAM 4.mp4",
+      "role": "backroom",
+      "fps_sample": 4,
+      "clip_start_local": "2026-04-10T20:20:00+05:30",
+      "description": "Back-of-house stock room (cartons, water dispenser). Non-customer area; any person here is treated as staff.",
+      "zones": ["BACKROOM"]
+    }
+  ],
+  "zones": [
+    {
+      "zone_id": "ENTRY",
+      "name": "Entry / Exit threshold",
+      "camera_id": "CAM_ENTRY_01",
+      "department": "entry",
+      "staff_only": false,
+      "polygon": [[0.05, 0.10], [0.70, 0.10], [0.70, 0.95], [0.05, 0.95]]
+    },
+    {
+      "zone_id": "SKINCARE",
+      "name": "Skincare wall",
+      "camera_id": "CAM_FLOOR_01",
+      "department": "skin",
+      "staff_only": false,
+      "polygon": [[0.03, 0.30], [0.80, 0.30], [0.88, 0.66], [0.03, 0.66]]
+    },
+    {
+      "zone_id": "MAKEUP_STUDIO",
+      "name": "Makeup studio table",
+      "camera_id": "CAM_FLOOR_01",
+      "department": "makeup",
+      "staff_only": false,
+      "polygon": [[0.58, 0.55], [1.0, 0.55], [1.0, 0.98], [0.58, 0.98]]
+    },
+    {
+      "zone_id": "MAKEUP",
+      "name": "Makeup brand wall",
+      "camera_id": "CAM_FLOOR_02",
+      "department": "makeup",
+      "staff_only": false,
+      "polygon": [[0.30, 0.28], [0.96, 0.28], [0.96, 0.82], [0.30, 0.82]]
+    },
+    {
+      "zone_id": "NAIL_FRAGRANCE",
+      "name": "Nail & fragrance unit",
+      "camera_id": "CAM_FLOOR_02",
+      "department": "personal-care",
+      "staff_only": false,
+      "polygon": [[0.08, 0.30], [0.40, 0.30], [0.40, 0.78], [0.08, 0.78]]
+    },
+    {
+      "zone_id": "BILLING",
+      "name": "Billing / cash counter queue",
+      "camera_id": "CAM_BILLING_01",
+      "department": "billing",
+      "staff_only": false,
+      "polygon": [[0.45, 0.30], [0.82, 0.30], [0.82, 0.99], [0.45, 0.99]]
+    },
+    {
+      "zone_id": "BACKROOM",
+      "name": "Back-of-house stock room",
+      "camera_id": "CAM_BACK_01",
+      "department": "backroom",
+      "staff_only": true,
+      "polygon": [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]]
+    }
+  ]
+}

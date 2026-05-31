@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Apex Retail — Store Intelligence</title>
+  <style>
+    :root {
+      --bg: #0f0a1e; --card: #1b1233; --card2: #241640; --ink: #f3effb;
+      --muted: #a99fc7; --accent: #8b5cf6; --accent2: #c084fc;
+      --ok: #34d399; --warn: #fbbf24; --crit: #f87171; --line: #2e2150;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+           background: var(--bg); color: var(--ink); }
+    header { padding: 18px 28px; display: flex; align-items: center; justify-content: space-between;
+             border-bottom: 1px solid var(--line); background: linear-gradient(90deg,#1a1033,#0f0a1e); }
+    header h1 { font-size: 20px; margin: 0; font-weight: 700; letter-spacing: .3px; }
+    header .sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+    .pill { font-size: 12px; padding: 5px 12px; border-radius: 999px; background: var(--card2);
+            border: 1px solid var(--line); }
+    .pill.live { color: var(--ok); } .pill.stale { color: var(--crit); }
+    main { padding: 24px 28px; max-width: 1200px; margin: 0 auto; }
+    .grid { display: grid; gap: 16px; grid-template-columns: repeat(4, 1fr); }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
+    .kpi .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .6px; }
+    .kpi .value { font-size: 34px; font-weight: 800; margin-top: 6px; }
+    .kpi .value.accent { color: var(--accent2); }
+    .kpi .delta { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+    h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted);
+         margin: 0 0 14px; }
+    .funnel-stage { margin-bottom: 12px; }
+    .funnel-stage .top { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
+    .bar { height: 22px; background: var(--card2); border-radius: 6px; overflow: hidden; }
+    .bar > span { display: block; height: 100%;
+                  background: linear-gradient(90deg,var(--accent),var(--accent2)); }
+    .drop { color: var(--warn); font-size: 12px; }
+    .zone { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; font-size: 13px; }
+    .zone .name { width: 130px; color: var(--muted); }
+    .zone .hb { flex: 1; height: 16px; background: var(--card2); border-radius: 5px; overflow: hidden; }
+    .zone .hb > span { display:block; height:100%; background: linear-gradient(90deg,#5b21b6,#c084fc); }
+    .zone .v { width: 42px; text-align: right; }
+    .anom { border-left: 3px solid var(--muted); padding: 8px 12px; margin-bottom: 8px;
+            background: var(--card2); border-radius: 0 8px 8px 0; font-size: 13px; }
+    .anom.WARN { border-color: var(--warn); } .anom.CRITICAL { border-color: var(--crit); }
+    .anom.INFO { border-color: var(--accent); }
+    .anom .t { font-weight: 700; } .anom .a { color: var(--muted); margin-top: 3px; }
+    .empty { color: var(--muted); font-size: 13px; }
+    footer { color: var(--muted); font-size: 12px; text-align: center; padding: 18px; }
+    .flash { animation: fl .6s ease; } @keyframes fl { from { color: var(--ok);} to {} }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Apex Retail · Store Intelligence</h1>
+      <div class="sub" id="storeLine">STORE_BLR_002 — Brigade Road, Bangalore</div>
+    </div>
+    <div style="text-align:right">
+      <span class="pill" id="feedPill">connecting…</span>
+      <div class="sub" id="updated" style="margin-top:6px"></div>
+    </div>
+  </header>
+
+  <main>
+    <div class="grid">
+      <div class="card kpi"><div class="label">Conversion rate</div>
+        <div class="value accent" id="conv">—</div><div class="delta" id="convd"></div></div>
+      <div class="card kpi"><div class="label">Unique visitors</div>
+        <div class="value" id="visitors">—</div><div class="delta" id="staffd"></div></div>
+      <div class="card kpi"><div class="label">Current queue depth</div>
+        <div class="value" id="queue">—</div><div class="delta" id="queued"></div></div>
+      <div class="card kpi"><div class="label">Abandonment rate</div>
+        <div class="value" id="abandon">—</div><div class="delta" id="purch"></div></div>
+    </div>
+
+    <div class="row">
+      <div class="card"><h2>Conversion funnel</h2><div id="funnel"></div></div>
+      <div class="card"><h2>Zone heatmap (visits)</h2><div id="heatmap"></div></div>
+    </div>
+
+    <div class="row">
+      <div class="card"><h2>Active anomalies</h2><div id="anomalies"></div></div>
+      <div class="card"><h2>Feed health</h2><div id="health"></div></div>
+    </div>
+  </main>
+
+  <footer>Polling the Store Intelligence API every 1.5s · run <code>scripts/replay.py</code> to stream events live.</footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
