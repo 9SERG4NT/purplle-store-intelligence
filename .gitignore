@@ -23,6 +23,7 @@ data/_zonecheck/
 _calib/
 _frames/
 _layout_image.png
+_dashboard*.png
 
 # ---- Python ----
 __pycache__/

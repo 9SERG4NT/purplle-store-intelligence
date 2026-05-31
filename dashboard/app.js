@@ -26,7 +26,7 @@ function renderFunnel(f) {
       <div class="top"><span>${s.stage.replace(/_/g, " ")}</span>
       <span>${s.count} ${drop}</span></div>
       <div class="bar"><span style="width:${w}%"></span></div></div>`;
-  }).join("") + `<div class="delta" style="color:var(--accent2);margin-top:6px">
+  }).join("") + `<div class="delta" style="color:var(--accent-ink);margin-top:10px;font-weight:600">
       Overall conversion: ${f.overall_conversion_pct}%</div>`;
 }
 

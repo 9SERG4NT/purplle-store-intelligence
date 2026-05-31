@@ -18,6 +18,10 @@ events → ingestion API → live dashboard.
 The detection pipeline (heavy CV deps) runs on the **host**; the API ships as a
 **lean container**. Events flow between them over `POST /events/ingest`.
 
+![Live dashboard](docs/img/dashboard.png)
+
+*Live web dashboard (off-white theme) — updates as events stream in.*
+
 ---
 
 ## Quickstart (5 commands)

@@ -33,6 +33,8 @@ services:
       # over the copy baked into the image, so you can use real pipeline output
       # without rebuilding.
       - ./data:/app/data
+      # live dashboard edits without a rebuild (also baked into the image)
+      - ./dashboard:/app/dashboard:ro
     depends_on:
       db:
         condition: service_healthy
