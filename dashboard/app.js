@@ -102,7 +102,14 @@ function loadCam() {
   camVideo.load();
   camVideo.play().catch(() => {});
 }
-camVideo.addEventListener("error", () => { vidHint.hidden = false; });
+// hide the hint as soon as any frame is decoded; only show it on a real load error
+camVideo.addEventListener("loadeddata", () => { vidHint.hidden = true; });
+camVideo.addEventListener("canplay", () => { vidHint.hidden = true; });
+camVideo.addEventListener("error", () => {
+  if (camVideo.currentSrc && camVideo.networkState === HTMLMediaElement.NETWORK_NO_SOURCE) {
+    vidHint.hidden = false;
+  }
+});
 camSel.addEventListener("change", loadCam);
 loadCam();
 
