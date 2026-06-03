@@ -111,13 +111,17 @@ I evaluated a VLM (Claude Vision) for staff classification. **Prompt used:**
 > "<short>"}. If genuinely unsure, prefer is_staff=false (we'd rather miss a staff
 > member than wrongly drop a real customer from the conversion metric).*
 
-**Did it work / would I ship it?** The rule-based heuristic (back-room presence +
-behind-counter dwell + dark-uniform persistence) already captures the unambiguous
-cases cheaply and deterministically. The VLM's value is the **ambiguous floor
-staff** who dress like customers — exactly where colour/position rules are weak —
-and it can read context (holding a scanner, restocking) a histogram can't. The
-costs are real: a per-track API call (latency + spend) and a network dependency in
-what should be an offline batch step. **Decision: keep it opt-in** (`USE_VLM_STAFF=1`)
-as a precision booster, default to the heuristic. I'd flip the default to VLM only
-if staff mis-labelling were measurably hurting the conversion denominator on the
-ground-truth clip — i.e., I'd let the metric, not a hunch, justify the cost.
+**Did it work / would I ship it?** I implemented two providers
+(`VLM_PROVIDER=groq` → Llama-4 vision, OpenAI-compatible API; or `anthropic` →
+Claude vision; see `pipeline/staff_vlm.py`) and **actually ran it on real crops**
+from the billing and floor cameras via Groq. Honest result: it returned
+well-formed JSON verdicts but labelled BOTH the counter person and a floor shopper
+`is_staff=false` — on **blurred-face, low-resolution** crops the uniform-vs-casual
+cue is ambiguous and, per my prompt, it defaults conservative. So the **VLM did not
+beat the rule-based heuristic** here. The heuristic (back-room presence +
+behind-counter *position* + dark-uniform persistence) exploits *spatial* signal the
+tight crop throws away, and is cheap and deterministic. **Decision: keep the VLM
+opt-in** (`USE_VLM_STAFF=1`), default to the heuristic. The change most likely to
+make the VLM win is feeding it the *whole frame with the counter visible* (spatial
+context) rather than a tight crop — I'd try that before raising spend. Running the
+experiment, not assuming, settled this.

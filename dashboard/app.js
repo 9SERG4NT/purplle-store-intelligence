@@ -14,6 +14,10 @@ async function getJSON(path) {
 
 function flash(el) { el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); }
 
+const STAGE_LABEL = {
+  entered: "Entered store", browsed_zone: "Browsed a zone",
+  billing_queue: "Reached billing", purchased: "Purchased",
+};
 function renderFunnel(f) {
   const box = $("funnel");
   if (!f.stages || !f.stages.length) { box.innerHTML = '<div class="empty">No sessions yet.</div>'; return; }
@@ -21,9 +25,9 @@ function renderFunnel(f) {
   box.innerHTML = f.stages.map((s) => {
     const w = (100 * s.count) / max;
     const drop = s.dropoff_pct_from_prev == null ? "" :
-      `<span class="drop">▼ ${s.dropoff_pct_from_prev}%</span>`;
+      `<span class="drop">▼ ${s.dropoff_pct_from_prev}% drop</span>`;
     return `<div class="funnel-stage">
-      <div class="top"><span>${s.stage.replace(/_/g, " ")}</span>
+      <div class="top"><span>${STAGE_LABEL[s.stage] || s.stage.replace(/_/g, " ")}</span>
       <span>${s.count} ${drop}</span></div>
       <div class="bar"><span style="width:${w}%"></span></div></div>`;
   }).join("") + `<div class="delta" style="color:var(--accent-ink);margin-top:10px;font-weight:600">
@@ -86,6 +90,10 @@ async function tick() {
     $("purch").textContent = `${m.purchases} POS txns today`;
     renderFunnel(f); renderHeatmap(h); renderAnomalies(a); renderHealth(hp);
     $("updated").textContent = "updated " + new Date().toLocaleTimeString();
+    if (m.window_start) {
+      const d = new Date(m.window_start);
+      $("windowLine").textContent = "data day: " + d.toISOString().slice(0, 10);
+    }
   } catch (e) {
     $("feedPill").textContent = "API unreachable"; $("feedPill").className = "pill stale";
     $("updated").textContent = String(e);

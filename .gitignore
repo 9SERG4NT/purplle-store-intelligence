@@ -49,3 +49,5 @@ pgdata/
 .idea/
 .vscode/
 *.log
+_dash*.png
+_vidcheck.png

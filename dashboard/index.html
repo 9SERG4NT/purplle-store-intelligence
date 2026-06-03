@@ -117,6 +117,13 @@
     footer code { background: #efece4; padding: 1px 6px; border-radius: 3px; font-size: 12px; }
 
     .updated { color: var(--faint); font-size: 12px; margin-top: 7px; font-variant-numeric: tabular-nums; }
+    .cap { color: var(--muted); font-size: 12px; margin: -8px 0 14px; line-height: 1.4; }
+    .kpi .hint { color: var(--faint); font-size: 11px; margin-top: 6px; }
+    .legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 10px 0 4px; font-size: 12px; color: var(--muted); }
+    .legend i { display: inline-block; width: 22px; height: 0; vertical-align: middle; margin-right: 5px; }
+    .legend .box { width: 13px; height: 13px; border: 2px solid #e0b341; border-radius: 2px; }
+    .legend .zone { width: 16px; height: 11px; border: 2px solid #b4b43c; background: rgba(180,180,60,.15); }
+    .legend .ln { border-top: 3px solid #e23b3b; }
     .flash { animation: fl .65s ease; }
     @keyframes fl { from { color: var(--ok); } to {} }
 
@@ -134,10 +141,12 @@
           <h1>Apex Retail <span class="thin">· Store Intelligence</span></h1>
         </div>
         <div class="sub" id="storeLine">STORE_BLR_002 — Brigade Road, Bangalore</div>
+        <div class="sub">Footfall &amp; conversion computed from in-store CCTV · this day's data, updates as events stream in</div>
       </div>
       <div class="status">
         <span class="pill" id="feedPill">connecting…</span>
         <div class="updated" id="updated"></div>
+        <div class="updated" id="windowLine"></div>
       </div>
     </div>
   </header>
@@ -145,13 +154,17 @@
   <main class="wrap">
     <section class="kpis">
       <div class="kpi"><div class="label">Conversion rate</div>
-        <div class="value accent" id="conv">—</div><div class="delta" id="convd"></div></div>
+        <div class="value accent" id="conv">—</div><div class="delta" id="convd"></div>
+        <div class="hint">buyers ÷ unique visitors (the north-star metric)</div></div>
       <div class="kpi"><div class="label">Unique visitors</div>
-        <div class="value" id="visitors">—</div><div class="delta" id="staffd"></div></div>
+        <div class="value" id="visitors">—</div><div class="delta" id="staffd"></div>
+        <div class="hint">distinct shoppers today · staff removed</div></div>
       <div class="kpi"><div class="label">Queue depth</div>
-        <div class="value" id="queue">—</div><div class="delta" id="queued"></div></div>
+        <div class="value" id="queue">—</div><div class="delta" id="queued"></div>
+        <div class="hint">people at the billing counter now</div></div>
       <div class="kpi"><div class="label">Abandonment</div>
-        <div class="value" id="abandon">—</div><div class="delta" id="purch"></div></div>
+        <div class="value" id="abandon">—</div><div class="delta" id="purch"></div>
+        <div class="hint">left the queue without buying</div></div>
     </section>
 
     <div class="card" style="margin-top:16px">
@@ -165,6 +178,14 @@
           <option value="cam_back_01">CAM 4 · Back room</option>
         </select>
       </div>
+      <div class="cap">This is the actual computer-vision output: every person the pipeline detected and tracked,
+        drawn back onto the footage. Pick a camera (top-right). The bar at the top of the video shows the live count.</div>
+      <div class="legend">
+        <span><i class="box"></i>person + track #</span>
+        <span><i class="zone"></i>product zone</span>
+        <span><i class="ln"></i>entry counting line</span>
+        <span>HUD = running entries / exits / queue</span>
+      </div>
       <div class="videowrap">
         <video id="camVideo" controls autoplay muted loop playsinline></video>
         <div class="vidhint" id="vidHint" hidden>
@@ -172,18 +193,24 @@
           <code>python pipeline/annotate.py</code><br>then refresh.
         </div>
       </div>
-      <div class="vidnote">YOLOv8 + ByteTrack overlay: boxes &amp; track IDs, zone polygons, the entry
-        counting line, and a live HUD (entries / exits / queue depth). Rendered offline by the pipeline.</div>
     </div>
 
     <div class="row">
-      <div class="card"><h2>Conversion funnel</h2><div id="funnel"></div></div>
-      <div class="card"><h2>Zone heatmap · visits</h2><div id="heatmap"></div></div>
+      <div class="card"><h2>Conversion funnel</h2>
+        <div class="cap">Where shoppers drop off: entered the store → browsed a zone → reached billing → bought. Bars shrink left-to-right.</div>
+        <div id="funnel"></div></div>
+      <div class="card"><h2>Zone heatmap · visits</h2>
+        <div class="cap">Which product zones pull the most footfall. Longer bar = more visitors stood there.</div>
+        <div id="heatmap"></div></div>
     </div>
 
     <div class="row">
-      <div class="card"><h2>Active anomalies</h2><div id="anomalies"></div></div>
-      <div class="card"><h2>Feed health</h2><div id="health"></div></div>
+      <div class="card"><h2>Active anomalies</h2>
+        <div class="cap">Operational alerts an on-call manager would act on (queue spike, dead zone, conversion drop).</div>
+        <div id="anomalies"></div></div>
+      <div class="card"><h2>Feed health</h2>
+        <div class="cap">Is the camera feed still flowing? Goes STALE if no events arrive for 10 min.</div>
+        <div id="health"></div></div>
     </div>
 
     <footer>Polling the Store Intelligence API every 1.5s · run

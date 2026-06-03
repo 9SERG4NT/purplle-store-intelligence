@@ -82,7 +82,7 @@ def load_sessions(
     zone_meta: dict[str, dict] = {}
 
     for e in events:
-        if e.zone_id and e.zone_type != "BILLING":
+        if e.zone_id and e.zone_id != BILLING_ZONE and e.zone_type != "BILLING":
             zm = zone_meta.setdefault(e.zone_id, {"name": e.zone_id, "is_revenue": None, "last_visit": None})
             if e.zone_name:
                 zm["name"] = e.zone_name
