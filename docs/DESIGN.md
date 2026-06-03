@@ -28,6 +28,30 @@ the system is built around the **real** data:
   presence with the real **20:25 POS transaction** so conversion is meaningful.
   This is a deliberate, documented assumption, not a fudge of the numbers.
 
+## 2a. Two event schemas — and why the API ingests both
+
+The PDF's "Required Output Schema" and the **provided `sample_events.jsonl`** do
+**not** match. The sample file is a realistic *multi-source* stream with three
+families that use different field names:
+
+| Family | Identity | Store | Time | Notable fields |
+|---|---|---|---|---|
+| `entry` / `exit` | `id_token` | `store_code` (`store_1076`) | `event_timestamp` | `gender_pred`, `age_pred`, `group_id`, `group_size`, `is_face_hidden` |
+| `zone_entered` / `zone_exited` | `track_id` | `store_id` (`ST1076`) | `event_time` | `zone_name`, `zone_type`, `is_revenue_zone`, hotspot x/y |
+| `queue_completed` / `queue_abandoned` | `track_id` | `store_id` | `queue_join_ts` | `queue_event_id`, `wait_seconds`, `queue_position_at_join`, `abandoned` |
+
+Because the held-out scoring set follows *this* schema, **the API ingests both it
+and the PDF schema** via `app/services/normalize.py`, which maps every family onto
+one internal event: it unifies `store_code`/`store_id` (`store_1076` ≡ `ST1076`),
+derives a visitor id from `id_token`/`track_id`, synthesises a deterministic
+idempotency key when none is supplied, reads conversion straight from
+`queue_completed` (served) vs `queue_abandoned`, and surfaces the demographics in
+`/metrics`. Our own detection pipeline emits the PDF schema (the one explicitly
+labelled "your pipeline must emit this"); the API consuming both is the safe call
+given the ambiguity. The official POS sample is the same Brigade store with fewer
+columns — `pipeline/pos.py` groups by `(store, date, time)` so it handles both
+exports.
+
 ## 3. Architecture
 
 ```

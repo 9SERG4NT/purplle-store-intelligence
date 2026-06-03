@@ -5,4 +5,6 @@ opencv-python==4.10.0.84  # video I/O, HSV histograms for Re-ID / staff heuristi
 numpy==1.26.4
 lap==0.5.12               # required by ByteTrack association
 httpx==0.28.1             # optional: stream events straight into the API
+imageio==2.36.1           # annotate.py: write processed-replay videos
+imageio-ffmpeg==0.5.1     # bundles ffmpeg for browser-playable H.264
 # torch / torchvision come in transitively via ultralytics (CPU build is fine for these short clips)

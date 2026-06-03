@@ -58,6 +58,14 @@ def _from_window(store_id: str, start: datetime, end: datetime, data: WindowData
 
     confidence = "LOW" if unique < settings.low_confidence_sessions else "OK"
 
+    gender_breakdown: dict[str, int] = {}
+    age_breakdown: dict[str, int] = {}
+    for s in customers:
+        if s.gender:
+            gender_breakdown[s.gender] = gender_breakdown.get(s.gender, 0) + 1
+        if s.age_bucket:
+            age_breakdown[s.age_bucket] = age_breakdown.get(s.age_bucket, 0) + 1
+
     return MetricsResponse(
         store_id=store_id, window_start=start, window_end=end,
         unique_visitors=unique, converted_visitors=converted,
@@ -65,4 +73,5 @@ def _from_window(store_id: str, start: datetime, end: datetime, data: WindowData
         avg_dwell_by_zone=avg_dwell, current_queue_depth=current_qd, max_queue_depth=max_qd,
         abandonment_rate=abandonment_rate, staff_excluded=data.staff_count,
         data_confidence=confidence,
+        gender_breakdown=gender_breakdown, age_bucket_breakdown=age_breakdown,
     )

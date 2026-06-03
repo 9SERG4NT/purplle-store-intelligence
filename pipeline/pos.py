@@ -24,26 +24,33 @@ def _parse_ts(order_date: str, order_time: str) -> datetime:
 
 
 def normalise(raw_csv: Path | str, store_id_out: str = "STORE_BLR_002") -> list[dict]:
-    """Collapse SKU lines into order-level transactions in the clean schema."""
+    """Collapse SKU lines into order-level transactions in the clean schema.
+
+    Groups by (store, date, time) rather than order_id, because the two real
+    exports disagree on order_id semantics (Brigade: per-order; official POS
+    sample: per-line-item) — but both share one timestamp per actual order.
+    """
     raw_csv = Path(raw_csv)
-    orders: dict[str, dict] = {}
+    orders: dict[tuple, dict] = {}
     with raw_csv.open(newline="", encoding="utf-8", errors="replace") as fh:
         for row in csv.DictReader(fh):
-            oid = (row.get("order_id") or "").strip()
-            if not oid:
+            date = (row.get("order_date") or "").strip()
+            time = (row.get("order_time") or "").strip()
+            if not date or not time:
                 continue
             try:
                 amount = float(row.get("total_amount") or 0.0)
             except ValueError:
                 amount = 0.0
-            if oid not in orders:
-                orders[oid] = {
+            key = (store_id_out, date, time)
+            if key not in orders:
+                orders[key] = {
                     "store_id": store_id_out,
-                    "transaction_id": f"TXN_{oid}",
-                    "_dt": _parse_ts(row["order_date"], row["order_time"]),
+                    "transaction_id": f"TXN_{date.replace('-', '')}_{time.replace(':', '')}",
+                    "_dt": _parse_ts(date, time),
                     "basket_value_inr": 0.0,
                 }
-            orders[oid]["basket_value_inr"] += amount
+            orders[key]["basket_value_inr"] += amount
 
     out = []
     for o in orders.values():

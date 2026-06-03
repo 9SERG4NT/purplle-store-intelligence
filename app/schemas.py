@@ -85,6 +85,8 @@ class MetricsResponse(BaseModel):
     abandonment_rate: float
     staff_excluded: int
     data_confidence: str
+    gender_breakdown: dict[str, int] = {}
+    age_bucket_breakdown: dict[str, int] = {}
 
 
 class FunnelStage(BaseModel):
@@ -103,6 +105,7 @@ class FunnelResponse(BaseModel):
 
 class HeatmapCell(BaseModel):
     zone_id: str
+    zone_name: Optional[str] = None
     department: str
     visits: int
     avg_dwell_ms: float

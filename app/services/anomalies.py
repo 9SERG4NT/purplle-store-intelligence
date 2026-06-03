@@ -8,14 +8,12 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import select
 from sqlalchemy.orm import Session as DbSession
 
 from app.core.config import get_settings
-from app.models import Event
 from app.schemas import Anomaly, AnomaliesResponse
 from app.services.sessions import load_sessions
-from app.services.store_layout import analytics_zones
+from app.services.store_layout import analytics_zones, is_known_store
 from app.services.window import latest_event_ts, resolve_window
 
 
@@ -60,14 +58,18 @@ def compute_anomalies(db: DbSession, store_id: str, date_str: str | None = None)
             ))
 
     # --- 2. dead zones (no customer visit in last N minutes) ---
+    # Candidate zones = those observed in the window (any store/schema) plus, for
+    # our configured store, its layout zones (so an unvisited zone still flags).
     dead_cutoff = ref - timedelta(minutes=settings.dead_zone_minutes)
-    last_visit = _last_zone_visits(db, store_id, start, end)
     window_len_min = (end - start).total_seconds() / 60.0
-    for z in analytics_zones():
-        zid = z["zone_id"]
-        if zid == "BILLING":
-            continue  # billing health is covered by queue metrics, not dead-zone
-        lv = last_visit.get(zid)
+    candidates: dict[str, datetime | None] = {
+        zid: meta.get("last_visit") for zid, meta in data.zone_meta.items()
+    }
+    if is_known_store(store_id):
+        for z in analytics_zones():
+            if z["zone_id"] != "BILLING":
+                candidates.setdefault(z["zone_id"], None)
+    for zid, lv in candidates.items():
         if lv is None and window_len_min >= settings.dead_zone_minutes:
             anomalies.append(_dead_zone(zid, ref, None, settings))
         elif lv is not None and lv < dead_cutoff:
@@ -104,21 +106,6 @@ def _dead_zone(zid: str, ref: datetime, last: datetime | None, settings) -> Anom
         suggested_action=f"Send a staff member to refresh the {zid} display or check for an obstruction.",
         detected_at=ref,
     )
-
-
-def _last_zone_visits(db: DbSession, store_id: str, start: datetime, end: datetime) -> dict[str, datetime]:
-    rows = db.execute(
-        select(Event.zone_id, Event.ts)
-        .where(Event.store_id == store_id, Event.ts >= start, Event.ts < end,
-               Event.event_type == "ZONE_ENTER", Event.is_staff.is_(False),
-               Event.zone_id.is_not(None))
-    ).all()
-    last: dict[str, datetime] = {}
-    for zid, ts in rows:
-        ts = _as_utc(ts)
-        if zid not in last or ts > last[zid]:
-            last[zid] = ts
-    return last
 
 
 def _baseline_conversion(db: DbSession, store_id: str, window_start: datetime) -> float | None:

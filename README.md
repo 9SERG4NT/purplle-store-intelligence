@@ -54,6 +54,17 @@ FOOTAGE="../CCTV Footage" RAW_POS="../Brigade_Bangalore_10_April_26 (1)bc6219c.c
 python scripts/replay.py --api http://localhost:8000 --speed 30
 ```
 
+**Processed-video replay (optional).** To see the detection itself — boxes, track
+IDs, zone polygons, the entry line and a live HUD — rendered onto the footage and
+played back inside the dashboard's *“Processed footage”* panel:
+
+```bash
+python pipeline/annotate.py --footage "../CCTV Footage"   # writes dashboard/media/*.mp4
+```
+
+The annotated MP4s are git-ignored (footage-derived); the panel shows a “generate
+them” hint until they exist.
+
 > The clips/POS are **not** in the repo (challenge rule). Point `FOOTAGE` and
 > `RAW_POS` at wherever you extracted the dataset. Defaults assume it sits one
 > directory above the repo.

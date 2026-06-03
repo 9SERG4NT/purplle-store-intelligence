@@ -92,5 +92,19 @@ async function tick() {
   }
 }
 
+// ---- processed-footage replay (annotated MP4s rendered by pipeline/annotate.py) ----
+const camSel = document.getElementById("camSel");
+const camVideo = document.getElementById("camVideo");
+const vidHint = document.getElementById("vidHint");
+function loadCam() {
+  vidHint.hidden = true;
+  camVideo.src = `media/${camSel.value}.mp4`;
+  camVideo.load();
+  camVideo.play().catch(() => {});
+}
+camVideo.addEventListener("error", () => { vidHint.hidden = false; });
+camSel.addEventListener("change", loadCam);
+loadCam();
+
 tick();
 setInterval(tick, 1500);

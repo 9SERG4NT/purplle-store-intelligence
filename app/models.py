@@ -32,6 +32,17 @@ class Event(Base):
     queue_depth: Mapped[int | None] = mapped_column(Integer, nullable=True)
     sku_zone: Mapped[str | None] = mapped_column(String(48), nullable=True)
     session_seq: Mapped[int] = mapped_column(Integer, default=0)
+    # --- official multi-source schema extras (all nullable) ---
+    zone_name: Mapped[str | None] = mapped_column(String(96), nullable=True)
+    zone_type: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    is_revenue_zone: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    gender: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    age: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    age_bucket: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    group_id: Mapped[str | None] = mapped_column(String(48), nullable=True)
+    group_size: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    wait_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    abandoned: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     ingested_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_utcnow, server_default=func.now()
     )

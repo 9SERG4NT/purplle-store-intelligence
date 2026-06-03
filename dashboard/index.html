@@ -100,6 +100,19 @@
     .delta { font-size: 13px; color: var(--muted); margin: 2px 0; }
     .delta b { color: var(--ink); font-weight: 600; }
 
+    /* processed-footage panel */
+    .vidhead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .vidhead h2 { margin: 0; }
+    select#camSel { font-family: var(--sans); font-size: 13px; color: var(--ink); background: var(--panel);
+                    border: 1px solid var(--line); border-radius: 4px; padding: 5px 9px; }
+    .videowrap { position: relative; background: #14110d; border-radius: 4px; overflow: hidden;
+                 aspect-ratio: 854 / 480; }
+    .videowrap video { width: 100%; height: 100%; display: block; object-fit: contain; }
+    .vidhint { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+               text-align: center; color: #cfc9bf; font-size: 13.5px; padding: 24px; }
+    .vidhint code { background: #2a241c; color: #efe9df; padding: 2px 7px; border-radius: 3px; }
+    .vidnote { color: var(--faint); font-size: 12.5px; margin-top: 9px; }
+
     footer { color: var(--faint); font-size: 12.5px; padding: 22px 0 40px; }
     footer code { background: #efece4; padding: 1px 6px; border-radius: 3px; font-size: 12px; }
 
@@ -140,6 +153,28 @@
       <div class="kpi"><div class="label">Abandonment</div>
         <div class="value" id="abandon">—</div><div class="delta" id="purch"></div></div>
     </section>
+
+    <div class="card" style="margin-top:16px">
+      <div class="vidhead">
+        <h2>Processed footage · detection replay</h2>
+        <select id="camSel">
+          <option value="cam_entry_01">CAM 3 · Entry / exit</option>
+          <option value="cam_floor_01">CAM 1 · Floor — skincare</option>
+          <option value="cam_floor_02">CAM 2 · Floor — makeup</option>
+          <option value="cam_billing_01">CAM 5 · Billing</option>
+          <option value="cam_back_01">CAM 4 · Back room</option>
+        </select>
+      </div>
+      <div class="videowrap">
+        <video id="camVideo" controls autoplay muted loop playsinline></video>
+        <div class="vidhint" id="vidHint" hidden>
+          Processed replays not found. Generate them with<br>
+          <code>python pipeline/annotate.py</code><br>then refresh.
+        </div>
+      </div>
+      <div class="vidnote">YOLOv8 + ByteTrack overlay: boxes &amp; track IDs, zone polygons, the entry
+        counting line, and a live HUD (entries / exits / queue depth). Rendered offline by the pipeline.</div>
+    </div>
 
     <div class="row">
       <div class="card"><h2>Conversion funnel</h2><div id="funnel"></div></div>

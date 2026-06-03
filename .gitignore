@@ -7,6 +7,8 @@ data/footage/
 data/pos_transactions_raw.csv
 # real Purplle POS (amounts/times) — derived from the dataset; regenerate via pipeline/pos.py
 data/pos_transactions.csv
+# provided sample_events.jsonl (part of the dataset) — used as a local test fixture
+tests/fixtures/*.jsonl
 *.xlsx
 
 # ---- Model weights (auto-downloaded) ----

@@ -58,6 +58,17 @@ the brief rewards. The one judgement call: `zone_id` is `null` for ENTRY/EXIT (p
 spec), and billing presence is modelled as the `BILLING` zone so it flows through
 the same zone-dwell logic as any other zone.
 
+**Update after inspecting the provided `sample_events.jsonl`:** the actual sample
+uses a *different, multi-source* schema than the PDF — three event families with
+`id_token`/`track_id`, `store_code`/`store_id`, demographics, and terminal
+`queue_completed`/`queue_abandoned` events. Rather than bet on one, I built a
+normalisation layer (`app/services/normalize.py`) so the API ingests **both** the
+PDF schema and the sample schema, mapping them onto one internal event. This is the
+single most important robustness decision for the held-out scoring set — a case
+where the provided artefact, not the spec, drove the design. I kept the pipeline
+emitting the PDF schema and made the *consumer* tolerant, because a tolerant ingest
+is cheap insurance and a lossy pipeline rewrite is not.
+
 ---
 
 ## Decision 3 — API storage & "real-time" semantics

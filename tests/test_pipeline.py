@@ -70,18 +70,18 @@ def test_descriptor_similarity():
 
 def test_pos_normalise_collapses_skus_to_orders(tmp_path):
     raw = tmp_path / "raw.csv"
+    # official POS has order_id per LINE-ITEM, so we group by (store, date, time)
     raw.write_text(
         "order_id,order_date,order_time,store_id,total_amount\n"
-        "1001,10-04-2026,14:38:12,ST1008,1240.00\n"
-        "1001,10-04-2026,14:38:12,ST1008,680.00\n"      # same order, 2 SKUs
-        "1002,10-04-2026,14:41:55,ST1008,500.00\n",
+        "1,10-04-2026,14:38:12,ST1008,1240.00\n"
+        "2,10-04-2026,14:38:12,ST1008,680.00\n"        # same order (same timestamp), 2 SKUs
+        "3,10-04-2026,14:41:55,ST1008,500.00\n",
         encoding="utf-8",
     )
     rows = pos.normalise(raw)
-    assert len(rows) == 2
-    o1 = next(r for r in rows if r["transaction_id"] == "TXN_1001")
+    assert len(rows) == 2                               # collapsed to 2 orders by timestamp
+    o1 = next(r for r in rows if r["timestamp"] == "2026-04-10T09:08:12Z")  # 14:38 IST -> UTC
     assert o1["basket_value_inr"] == 1920.0            # 1240 + 680
-    assert o1["timestamp"] == "2026-04-10T09:08:12Z"   # 14:38 IST -> 09:08 UTC
 
 
 # ---- SessionManager: counting + edge cases ----------------------------------
