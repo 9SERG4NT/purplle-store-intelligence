@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from config import CONFIG
@@ -27,6 +27,16 @@ from tracklets import Tracklet, ZoneInterval, descriptor_similarity
 
 def _visitor_id() -> str:
     return "VIS_" + uuid.uuid4().hex[:8]
+
+
+def _zone_kind(department: str) -> tuple[str, bool]:
+    """Derive (zone_type, is_revenue) from a zone's department for official events."""
+    d = (department or "").lower()
+    if d == "billing":
+        return "BILLING", True
+    if d in ("entry", "backroom"):
+        return d.upper(), False
+    return "SHELF", True  # product departments (skin/makeup/personal-care/...) are revenue zones
 
 
 def classify_staff(t: Tracklet) -> bool:
@@ -222,6 +232,89 @@ class SessionManager:
 
         events.sort(key=lambda e: (e["_ts"], e["_vid"]))
         return [build_event(**e["kw"]) for e in events]
+
+    # ----- official multi-source schema (matches the provided sample_events.jsonl) ----
+    def build_official_events(self) -> list[dict]:
+        """Emit events in the provided sample_events.jsonl schema (entry/exit/
+        zone_entered/zone_exited/queue_completed/queue_abandoned). We carry
+        id_token on every event (= our visitor_id) so the API links a session's
+        entry, zone and billing events even though the official zone/queue
+        families only key on track_id. Demographics are null and
+        is_face_hidden=true — faces are blurred, so we don't fabricate them."""
+        groups = self._assign_groups()
+        out: list[dict] = []
+
+        def iso(dt: datetime) -> str:
+            return dt.astimezone(timezone.utc).replace(tzinfo=None).isoformat()
+
+        for s in self.sessions:
+            tid = (int(s.visitor_id.split("_")[-1], 16) % 100000) if "_" in s.visitor_id else abs(hash(s.visitor_id)) % 100000
+            gid, gsize = groups.get(s.visitor_id, (None, None))
+            for etype, ts, _conf, cam in s.crossing_events:
+                kind = "exit" if etype == "EXIT" else "entry"
+                out.append({
+                    "event_type": kind, "id_token": s.visitor_id, "store_code": self.store_id,
+                    "camera_id": cam, "event_timestamp": iso(ts), "is_staff": s.is_staff,
+                    "gender_pred": None, "age_pred": None, "age_bucket": None,
+                    "is_face_hidden": True, "group_id": gid, "group_size": gsize,
+                })
+            for zi in s.zone_intervals:
+                if zi.dwell_seconds < CONFIG.min_zone_seconds:
+                    continue
+                if zi.zone_id == "BILLING":
+                    out.append(self._official_queue(s, zi, tid, iso))
+                else:
+                    ztype, rev = _zone_kind(zi.department)
+                    for kind, t in (("zone_entered", zi.t_enter), ("zone_exited", zi.t_exit)):
+                        out.append({
+                            "event_type": kind, "id_token": s.visitor_id, "track_id": tid,
+                            "store_id": self.store_id, "camera_id": zi.camera_id, "zone_id": zi.zone_id,
+                            "zone_name": zi.zone_id.replace("_", " ").title(), "zone_type": ztype,
+                            "is_revenue_zone": "Yes" if rev else "No", "event_time": iso(t),
+                            "gender": None, "age": None, "age_bucket": None,
+                        })
+        out.sort(key=lambda e: e.get("event_timestamp") or e.get("event_time") or e.get("queue_join_ts"))
+        return out
+
+    def _official_queue(self, s: Session, zi: ZoneInterval, tid: int, iso) -> dict:
+        served = self._purchase_follows(zi.t_exit)
+        return {
+            "queue_event_id": str(uuid.uuid4()),
+            "event_type": "queue_completed" if served else "queue_abandoned",
+            "id_token": s.visitor_id, "track_id": tid, "store_id": self.store_id,
+            "camera_id": zi.camera_id, "zone_id": "BILLING", "zone_name": "Billing Counter Queue",
+            "zone_type": "BILLING", "is_revenue_zone": "Yes",
+            "queue_join_ts": iso(zi.t_enter),
+            "queue_served_ts": iso(zi.t_exit) if served else None,
+            "queue_exit_ts": iso(zi.t_exit),
+            "wait_seconds": int(zi.dwell_seconds),
+            "queue_position_at_join": zi.queue_depth_at_join,
+            "abandoned": not served, "gender": None, "age": None, "age_bucket": None,
+        }
+
+    def _assign_groups(self) -> dict[str, tuple]:
+        """Visitors entering within GROUP_WINDOW seconds = one group (group entry)."""
+        window = 3.0
+        arrivals = []
+        for s in self.sessions:
+            ent = [t for et, t, _c, _cam in s.crossing_events if et in ("ENTRY", "REENTRY")]
+            if ent:
+                arrivals.append((min(ent), s.visitor_id))
+        arrivals.sort()
+        groups: dict[str, tuple] = {}
+        i = 0
+        gnum = 0
+        while i < len(arrivals):
+            j = i + 1
+            while j < len(arrivals) and (arrivals[j][0] - arrivals[i][0]).total_seconds() <= window:
+                j += 1
+            members = arrivals[i:j]
+            if len(members) >= 2:
+                gnum += 1
+                for _, vid in members:
+                    groups[vid] = (f"G_{gnum}", len(members))
+            i = j
+        return groups
 
     def _emit_zone(self, emit, s: Session, zi: ZoneInterval) -> None:
         cam = zi.camera_id

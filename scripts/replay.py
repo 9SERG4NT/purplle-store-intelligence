@@ -25,10 +25,22 @@ def _default_events() -> Path:
 
 
 def _ts(e: dict) -> datetime:
-    return datetime.strptime(e["timestamp"], "%Y-%m-%dT%H:%M:%SZ")
+    """Robust to both schemas: PDF (timestamp, ...Z) and official
+    (event_timestamp / event_time / queue_join_ts, microseconds, no Z)."""
+    raw = (e.get("timestamp") or e.get("event_timestamp") or e.get("event_time")
+           or e.get("queue_join_ts") or "1970-01-01T00:00:00")
+    return datetime.fromisoformat(str(raw).replace("Z", "+00:00").replace("+00:00", ""))
 
 
 def replay(api: str, events_path: Path, speed: float, batch: int) -> None:
+    # ingest prior-day baseline first (instant, no delay) so /anomalies has history
+    baseline = events_path.parent / "baseline_events.jsonl"
+    if baseline.exists():
+        rows = [json.loads(l) for l in baseline.read_text(encoding="utf-8").splitlines() if l.strip()]
+        for i in range(0, len(rows), 200):
+            httpx.post(f"{api}/events/ingest", json={"events": rows[i:i + 200]}, timeout=30.0)
+        print(f"seeded {len(rows)} baseline (prior-day) events")
+
     events = [json.loads(l) for l in events_path.read_text(encoding="utf-8").splitlines() if l.strip()]
     events.sort(key=_ts)
     if not events:

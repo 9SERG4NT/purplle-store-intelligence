@@ -33,6 +33,7 @@ services:
       # over the copy baked into the image, so you can use real pipeline output
       # without rebuilding.
       - ./data:/app/data
+      - ./scripts:/app/scripts:ro
       # live dashboard edits without a rebuild (also baked into the image)
       - ./dashboard:/app/dashboard:ro
     depends_on:
@@ -44,9 +45,11 @@ services:
   # dashboard shows live data on first boot. Idempotent (ingest dedups by event_id).
   seed:
     build: .
-    command: ["python", "scripts/replay.py", "--api", "http://api:8000", "--speed", "90"]
+    command: ["python", "scripts/replay.py", "--api", "http://api:8000", "--speed", "90",
+              "--events", "data/sample_events.jsonl"]
     volumes:
       - ./data:/app/data
+      - ./scripts:/app/scripts:ro
     depends_on:
       api:
         condition: service_healthy

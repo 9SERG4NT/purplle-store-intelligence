@@ -1,0 +1,50 @@
+{
+  "store_id": "STORE_BLR_009",
+  "pos_store_id": "ST0009",
+  "store_name": "Second store (additional clips)",
+  "city": "Bangalore",
+  "timezone": "Asia/Kolkata",
+  "open_hours": { "open": "10:00", "close": "22:00" },
+  "_note": "Best-effort calibration for the extra clips (entry 1/2, billing_area, zone). 960x1080, different angle/day than the main store. No POS for this store, so conversion comes from queue_completed (served) only.",
+  "cameras": [
+    {
+      "camera_id": "CAM_ENTRY_A", "source_file": "entry 1.mp4", "role": "entry",
+      "fps_sample": 6, "clip_start_local": "2026-04-11T18:00:00+05:30",
+      "description": "Entry threshold (glass door at top); inbound = moving DOWN into the store.",
+      "entry_line": [[0.0, 0.26], [1.0, 0.26]], "inside_point": [0.5, 0.85],
+      "zones": ["ENTRY9"]
+    },
+    {
+      "camera_id": "CAM_ENTRY_B", "source_file": "entry 2.mp4", "role": "entry",
+      "fps_sample": 6, "clip_start_local": "2026-04-11T18:05:00+05:30",
+      "description": "Second entry-door view; inbound = moving DOWN.",
+      "entry_line": [[0.0, 0.24], [1.0, 0.24]], "inside_point": [0.5, 0.85],
+      "zones": ["ENTRY9"]
+    },
+    {
+      "camera_id": "CAM_BILLING_A", "source_file": "billing_area.mp4", "role": "billing",
+      "fps_sample": 5, "clip_start_local": "2026-04-11T18:10:00+05:30",
+      "description": "Billing counter; customers queue in front (centre).",
+      "staff_region": [[0.0, 0.0], [1.0, 0.0], [1.0, 0.34], [0.0, 0.34]],
+      "queue_region": [[0.28, 0.36], [0.80, 0.36], [0.80, 0.99], [0.28, 0.99]],
+      "zones": ["BILLING"]
+    },
+    {
+      "camera_id": "CAM_FLOOR_A", "source_file": "zone.mp4", "role": "floor",
+      "fps_sample": 5, "clip_start_local": "2026-04-11T18:15:00+05:30",
+      "description": "Product shelf aisle; customers browse the central aisle.",
+      "zones": ["SHELF_AISLE"]
+    }
+  ],
+  "zones": [
+    {"zone_id": "ENTRY9", "name": "Entry threshold", "camera_id": "CAM_ENTRY_A",
+     "department": "entry", "staff_only": false,
+     "polygon": [[0.05, 0.10], [0.95, 0.10], [0.95, 0.95], [0.05, 0.95]]},
+    {"zone_id": "BILLING", "name": "Billing Counter Queue", "camera_id": "CAM_BILLING_A",
+     "department": "billing", "staff_only": false,
+     "polygon": [[0.28, 0.36], [0.80, 0.36], [0.80, 0.99], [0.28, 0.99]]},
+    {"zone_id": "SHELF_AISLE", "name": "Shelf aisle", "camera_id": "CAM_FLOOR_A",
+     "department": "skin", "staff_only": false,
+     "polygon": [[0.38, 0.38], [0.98, 0.38], [0.98, 0.98], [0.38, 0.98]]}
+  ]
+}

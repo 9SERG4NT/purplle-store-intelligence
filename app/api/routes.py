@@ -71,3 +71,17 @@ def get_anomalies(store_id: str, db: Session = Depends(get_db), date: str | None
 @router.get("/health", response_model=HealthResponse, tags=["ops"])
 def get_health(db: Session = Depends(get_db)) -> HealthResponse:
     return health.compute_health(db)
+
+
+@router.post("/demo/replay", tags=["demo"])
+def demo_replay(store_id: str = Query("STORE_BLR_002"), seconds: float = Query(20.0)):
+    """Demo only: reset the store and re-stream the bundled sample over ~`seconds`
+    so the dashboard fills from zero in real time. Returns immediately."""
+    from app.services import demo
+    return demo.start_replay(store_id, duration_s=seconds)
+
+
+@router.get("/demo/replay/status", tags=["demo"])
+def demo_replay_status():
+    from app.services import demo
+    return demo.status()

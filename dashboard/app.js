@@ -121,5 +121,28 @@ camVideo.addEventListener("error", () => {
 camSel.addEventListener("change", loadCam);
 loadCam();
 
+// ---- live replay button: reset the store + re-stream so KPIs climb from zero ----
+const replayBtn = document.getElementById("replayBtn");
+async function pollReplay() {
+  try {
+    const s = await getJSON("/demo/replay/status");
+    if (s.running) {
+      replayBtn.disabled = true;
+      replayBtn.textContent = `▶ streaming ${s.sent}/${s.total}`;
+      setTimeout(pollReplay, 700);
+    } else {
+      replayBtn.disabled = false;
+      replayBtn.textContent = "▶ Replay live";
+    }
+  } catch { replayBtn.disabled = false; replayBtn.textContent = "▶ Replay live"; }
+}
+replayBtn.addEventListener("click", async () => {
+  replayBtn.disabled = true; replayBtn.textContent = "▶ starting…";
+  try {
+    await fetch(`${API}/demo/replay?store_id=${STORE}&seconds=20`, { method: "POST" });
+    pollReplay();
+  } catch { replayBtn.disabled = false; replayBtn.textContent = "▶ Replay live"; }
+});
+
 tick();
 setInterval(tick, 1500);

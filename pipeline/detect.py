@@ -43,6 +43,7 @@ class _TrackState:
     rep_area: float = 0.0
     rep_crop: Optional[np.ndarray] = None  # largest person crop, for the optional VLM
     prev_foot: Optional[tuple[float, float]] = None
+    last_cross_ts: Optional[datetime] = None
     cur_zone: Optional[str] = None
     zone_enter_ts: Optional[datetime] = None
     zone_enter_qd: Optional[int] = None
@@ -128,12 +129,16 @@ def process_camera(cam: Camera, video_path: Path, layout: StoreLayout, model) ->
                         st.rep_area = area
                         st.rep_crop = frame[max(0, y1):y2, max(0, x1):x2].copy()
 
-                # entry-line crossings
+                # entry-line crossings (debounced to ignore jitter near the line)
                 if cam.entry_line and cam.inside_point and st.prev_foot is not None:
                     direction = crossing_direction(
                         cam.entry_line[0], cam.entry_line[1], cam.inside_point, st.prev_foot, fp)
                     if direction:
-                        st.crossings.append(Crossing(t=ts, direction=direction))
+                        recent = (st.last_cross_ts is not None and
+                                  (ts - st.last_cross_ts).total_seconds() < CONFIG.crossing_debounce_seconds)
+                        if not recent:
+                            st.crossings.append(Crossing(t=ts, direction=direction))
+                            st.last_cross_ts = ts
                 st.prev_foot = fp
 
                 # zone membership transitions
@@ -217,8 +222,17 @@ def run(footage_dir: Path, out_path: Path, layout: StoreLayout, raw_pos: Optiona
     with EventWriter(out_path) as w:
         for e in events:
             w.write(e)
+    # also emit the official multi-source schema (the provided sample_events.jsonl shape)
+    import json
+    official = mgr.build_official_events()
+    official_path = out_path.with_name(out_path.stem + "_official.jsonl")
+    with official_path.open("w", encoding="utf-8") as fh:
+        for e in official:
+            fh.write(json.dumps(e, separators=(",", ":")) + "\n")
+
     cust = [s for s in mgr.sessions if not s.is_staff]
     print(f"\n=== wrote {w.count} events -> {out_path}")
+    print(f"=== wrote {len(official)} official-schema events -> {official_path}")
     print(f"sessions={len(mgr.sessions)} customers={len(cust)} staff={len(mgr.sessions)-len(cust)}")
     return w.count
 

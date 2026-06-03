@@ -47,6 +47,11 @@
     .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600;
             padding: 5px 11px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel);
             color: var(--muted); letter-spacing: .3px; }
+    .replay { font-family: var(--sans); font-size: 12.5px; font-weight: 600; cursor: pointer;
+              color: #fff; background: var(--accent); border: none; border-radius: 5px;
+              padding: 7px 13px; margin-bottom: 7px; }
+    .replay:hover { background: var(--accent-ink); }
+    .replay:disabled { opacity: .55; cursor: default; }
     .pill.live { color: var(--ok); border-color: #cfe6d6; background: #f3faf5; }
     .pill.stale { color: var(--crit); border-color: #eccfcf; background: #fcf4f4; }
     .pill .led { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
@@ -144,6 +149,7 @@
         <div class="sub">Footfall &amp; conversion computed from in-store CCTV · this day's data, updates as events stream in</div>
       </div>
       <div class="status">
+        <button id="replayBtn" class="replay">▶ Replay live</button>
         <span class="pill" id="feedPill">connecting…</span>
         <div class="updated" id="updated"></div>
         <div class="updated" id="windowLine"></div>

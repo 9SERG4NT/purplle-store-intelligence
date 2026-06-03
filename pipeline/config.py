@@ -34,6 +34,8 @@ class PipelineConfig:
     # --- entry/exit smoothing ---
     # A track must persist this long before its crossing counts (kills 1-frame ghosts).
     min_track_seconds_for_entry: float = _f("MIN_TRACK_SECONDS_FOR_ENTRY", 0.6)
+    # Ignore another crossing from the same track within this window (kills line jitter).
+    crossing_debounce_seconds: float = _f("CROSSING_DEBOUNCE_SECONDS", 2.0)
 
     # --- re-entry & cross-camera association ---
     reentry_window_seconds: float = _f("REENTRY_WINDOW_SECONDS", 600.0)
