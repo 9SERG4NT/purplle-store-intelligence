@@ -52,6 +52,8 @@
               padding: 7px 13px; margin-bottom: 7px; }
     .replay:hover { background: var(--accent-ink); }
     .replay:disabled { opacity: .55; cursor: default; }
+    .loop { font-size: 12px; color: var(--muted); margin: 0 0 7px 8px; cursor: pointer; user-select: none; }
+    .loop input { vertical-align: middle; }
     .pill.live { color: var(--ok); border-color: #cfe6d6; background: #f3faf5; }
     .pill.stale { color: var(--crit); border-color: #eccfcf; background: #fcf4f4; }
     .pill .led { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
@@ -150,6 +152,7 @@
       </div>
       <div class="status">
         <button id="replayBtn" class="replay">▶ Replay live</button>
+        <label class="loop"><input type="checkbox" id="loopChk" /> loop</label>
         <span class="pill" id="feedPill">connecting…</span>
         <div class="updated" id="updated"></div>
         <div class="updated" id="windowLine"></div>

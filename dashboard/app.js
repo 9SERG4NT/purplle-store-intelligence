@@ -5,6 +5,13 @@ let prevVisitors = null;
 
 const $ = (id) => document.getElementById(id);
 const pct = (x) => (x == null ? "—" : (x * 100).toFixed(1) + "%");
+const _prev = {};
+function setKPI(id, text, val) {
+  const el = $(id);
+  if (_prev[id] !== undefined && _prev[id] !== val) flash(el);
+  _prev[id] = val;
+  el.textContent = text;
+}
 
 async function getJSON(path) {
   const r = await fetch(API + path, { headers: { "Cache-Control": "no-cache" } });
@@ -78,15 +85,13 @@ async function tick() {
       getJSON(`/stores/${STORE}/anomalies`),
       getJSON(`/health`),
     ]);
-    $("conv").textContent = pct(m.conversion_rate);
+    setKPI("conv", pct(m.conversion_rate), m.conversion_rate);
     $("convd").textContent = `${m.converted_visitors}/${m.unique_visitors} converted · ${m.purchases} purchases`;
-    $("visitors").textContent = m.unique_visitors;
-    if (prevVisitors !== null && m.unique_visitors !== prevVisitors) flash($("visitors"));
-    prevVisitors = m.unique_visitors;
+    setKPI("visitors", m.unique_visitors, m.unique_visitors);
     $("staffd").textContent = `${m.staff_excluded} staff excluded · confidence ${m.data_confidence}`;
-    $("queue").textContent = m.current_queue_depth;
+    setKPI("queue", m.current_queue_depth, m.current_queue_depth);
     $("queued").textContent = `peak ${m.max_queue_depth}`;
-    $("abandon").textContent = pct(m.abandonment_rate);
+    setKPI("abandon", pct(m.abandonment_rate), m.abandonment_rate);
     $("purch").textContent = `${m.purchases} POS txns today`;
     renderFunnel(f); renderHeatmap(h); renderAnomalies(a); renderHealth(hp);
     $("updated").textContent = "updated " + new Date().toLocaleTimeString();
@@ -120,28 +125,32 @@ function loadCam() {
 camSel.addEventListener("change", loadCam);
 loadCam();
 
-// ---- live replay button: reset the store + re-stream so KPIs climb from zero ----
+// ---- live replay: reset the store + re-stream so KPIs climb from zero ----
 const replayBtn = document.getElementById("replayBtn");
+const loopChk = document.getElementById("loopChk");
+async function startReplay() {
+  try {
+    await fetch(`${API}/demo/replay?store_id=${STORE}&seconds=18`, { method: "POST" });
+    pollReplay();
+  } catch { replayBtn.disabled = false; replayBtn.textContent = "▶ Replay live"; }
+}
 async function pollReplay() {
   try {
     const s = await getJSON("/demo/replay/status");
     if (s.running) {
       replayBtn.disabled = true;
-      replayBtn.textContent = `▶ streaming ${s.sent}/${s.total}`;
-      setTimeout(pollReplay, 700);
+      replayBtn.textContent = `● streaming ${s.sent}/${s.total}`;
+      setTimeout(pollReplay, 600);
     } else {
       replayBtn.disabled = false;
       replayBtn.textContent = "▶ Replay live";
+      if (loopChk && loopChk.checked) setTimeout(startReplay, 3000);  // continuous live loop
     }
   } catch { replayBtn.disabled = false; replayBtn.textContent = "▶ Replay live"; }
 }
-replayBtn.addEventListener("click", async () => {
-  replayBtn.disabled = true; replayBtn.textContent = "▶ starting…";
-  try {
-    await fetch(`${API}/demo/replay?store_id=${STORE}&seconds=20`, { method: "POST" });
-    pollReplay();
-  } catch { replayBtn.disabled = false; replayBtn.textContent = "▶ Replay live"; }
-});
+replayBtn.addEventListener("click", () => { replayBtn.disabled = true; replayBtn.textContent = "● starting…"; startReplay(); });
 
 tick();
 setInterval(tick, 1500);
+// auto-play once on load so the dashboard is dynamic immediately (KPIs animate from 0)
+setTimeout(() => { replayBtn.disabled = true; replayBtn.textContent = "● starting…"; startReplay(); }, 1200);

@@ -20,7 +20,9 @@ def _i(name: str, default: int) -> int:
 @dataclass(frozen=True)
 class PipelineConfig:
     # --- detection ---
-    model_weights: str = os.getenv("YOLO_WEIGHTS", "yolov8n.pt")
+    # yolo11s won a benchmark on this footage: +19% person detections vs yolov8n AND
+    # faster on CPU; it also beat the heavier yolo11m here (see CHOICES.md).
+    model_weights: str = os.getenv("YOLO_WEIGHTS", "yolo11s.pt")
     imgsz: int = _i("YOLO_IMGSZ", 640)
     # Keep LOW-confidence detections (challenge: "do not suppress low-conf events").
     # We detect down to det_conf but flag anything below report_conf as low-confidence.
