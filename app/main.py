@@ -90,8 +90,8 @@ app.include_router(router)
 
 @app.get("/", tags=["ops"])
 def root():
-    return {"service": "store-intelligence", "docs": "/docs",
-            "dashboard": "/dashboard/", "health": "/health"}
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/dashboard/")
 
 
 _dash = Path(__file__).resolve().parent.parent / "dashboard"
