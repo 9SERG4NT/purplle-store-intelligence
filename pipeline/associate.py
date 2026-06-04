@@ -271,7 +271,7 @@ class SessionManager:
                             "store_id": self.store_id, "camera_id": zi.camera_id, "zone_id": zi.zone_id,
                             "zone_name": zi.zone_id.replace("_", " ").title(), "zone_type": ztype,
                             "is_revenue_zone": "Yes" if rev else "No", "event_time": iso(t),
-                            "gender": None, "age": None, "age_bucket": None,
+                            "is_staff": s.is_staff, "gender": None, "age": None, "age_bucket": None,
                         })
         out.sort(key=lambda e: e.get("event_timestamp") or e.get("event_time") or e.get("queue_join_ts"))
         return out
@@ -289,7 +289,8 @@ class SessionManager:
             "queue_exit_ts": iso(zi.t_exit),
             "wait_seconds": int(zi.dwell_seconds),
             "queue_position_at_join": zi.queue_depth_at_join,
-            "abandoned": not served, "gender": None, "age": None, "age_bucket": None,
+            "abandoned": not served, "is_staff": s.is_staff,
+            "gender": None, "age": None, "age_bucket": None,
         }
 
     def _assign_groups(self) -> dict[str, tuple]:
