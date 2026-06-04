@@ -8,9 +8,6 @@ __pycache__
 .pytest_cache
 .coverage
 htmlcov
-*.mp4
-*.avi
-*.mov
 *.xlsx
 *.pt
 *.onnx
