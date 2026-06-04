@@ -1,7 +1,4 @@
 # ---- Dataset / footage: MUST NOT be committed (challenge rule) ----
-*.mp4
-*.avi
-*.mov
 CCTV Footage/
 data/footage/
 data/pos_transactions_raw.csv
@@ -26,7 +23,6 @@ data/events*.json
 # the events* pattern above.) Un-ignore it so a clean clone has both stores.
 !data/events_store2_official.jsonl
 # per-camera live-readout sidecars rendered next to the annotated mp4s (footage-derived)
-dashboard/media/*.json
 data/_vlm_crops/
 data/_zonecheck/
 _calib/
