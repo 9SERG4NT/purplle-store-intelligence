@@ -104,20 +104,19 @@ async function tick() {
 const camSel = document.getElementById("camSel");
 const camVideo = document.getElementById("camVideo");
 const vidHint = document.getElementById("vidHint");
+let _vidTimer = null;
 function loadCam() {
-  vidHint.hidden = true;
+  vidHint.hidden = true;                       // never show while (re)loading
   camVideo.src = `media/${camSel.value}.mp4`;
   camVideo.load();
   camVideo.play().catch(() => {});
+  clearTimeout(_vidTimer);
+  // only surface the hint if, after 6s, the video genuinely hasn't loaded a frame
+  _vidTimer = setTimeout(() => { if (camVideo.readyState === 0) vidHint.hidden = false; }, 6000);
 }
-// hide the hint as soon as any frame is decoded; only show it on a real load error
-camVideo.addEventListener("loadeddata", () => { vidHint.hidden = true; });
-camVideo.addEventListener("canplay", () => { vidHint.hidden = true; });
-camVideo.addEventListener("error", () => {
-  if (camVideo.currentSrc && camVideo.networkState === HTMLMediaElement.NETWORK_NO_SOURCE) {
-    vidHint.hidden = false;
-  }
-});
+// any sign of playback hides the hint for good
+["loadeddata", "canplay", "playing", "timeupdate"].forEach((ev) =>
+  camVideo.addEventListener(ev, () => { vidHint.hidden = true; clearTimeout(_vidTimer); }));
 camSel.addEventListener("change", loadCam);
 loadCam();
 
