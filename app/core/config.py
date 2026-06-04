@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     # Postgres in docker-compose; override with sqlite for local/tests.
-    database_url: str = "postgresql+psycopg://postgres:postgres@db:5432/store"
+    database_url: str = "sqlite:///./store.db"
 
     store_layout_path: str = str(REPO_ROOT / "data" / "store_layout.json")
     pos_csv_path: str = str(REPO_ROOT / "data" / "pos_transactions.csv")

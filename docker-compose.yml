@@ -27,7 +27,7 @@ services:
       DATABASE_URL: postgresql+psycopg://postgres:postgres@db:5432/store
       LOG_LEVEL: INFO
     ports:
-      - "8000:8000"
+      - "8000:7860"
     volumes:
       # host data (store_layout.json, real pos_transactions.csv, events.jsonl) wins
       # over the copy baked into the image, so you can use real pipeline output
