@@ -10,15 +10,15 @@
     {
       "camera_id": "CAM_ENTRY_A", "source_file": "entry 1.mp4", "role": "entry",
       "fps_sample": 6, "clip_start_local": "2026-04-11T18:00:00+05:30",
-      "description": "Entry threshold (glass door at top); inbound = moving DOWN into the store.",
-      "entry_line": [[0.0, 0.26], [1.0, 0.26]], "inside_point": [0.5, 0.85],
+      "description": "Glass storefront, camera inside looking out. The mall corridor is at the TOP (people pass by behind the glass) and the store's wooden floor is BELOW the door threshold. Counting line sits ON the door threshold (where the glass meets the wooden floor, y=0.60, calibrated from frames) so a visitor is counted only once their feet step onto the store floor (fully entered), not when they walk past in the corridor. Inbound = moving DOWN into the store.",
+      "entry_line": [[0.0, 0.60], [1.0, 0.60]], "inside_point": [0.5, 0.93],
       "zones": ["ENTRY9"]
     },
     {
       "camera_id": "CAM_ENTRY_B", "source_file": "entry 2.mp4", "role": "entry",
       "fps_sample": 6, "clip_start_local": "2026-04-11T18:05:00+05:30",
-      "description": "Second entry-door view; inbound = moving DOWN.",
-      "entry_line": [[0.0, 0.24], [1.0, 0.24]], "inside_point": [0.5, 0.85],
+      "description": "Second glass-door view of the same storefront. Counting line on the door threshold (y=0.62, calibrated) so visitors are counted only when fully onto the store's wooden floor, not while passing in the mall corridor above. Inbound = moving DOWN.",
+      "entry_line": [[0.0, 0.62], [1.0, 0.62]], "inside_point": [0.5, 0.93],
       "zones": ["ENTRY9"]
     },
     {

@@ -17,7 +17,7 @@ from app.models import Event
 from app.services.ingestion import ingest_events
 from app.services.normalize import canon_store, parse_ts
 
-_STATE = {"running": False, "store": None, "sent": 0, "total": 0}
+_STATE = {"running": False, "store": None, "sent": 0, "total": 0, "gen": 0}
 _LOCK = threading.Lock()
 
 
@@ -25,9 +25,12 @@ def status() -> dict:
     return dict(_STATE)
 
 
-def _sample_path() -> Path:
-    p = Path(get_settings().store_layout_path).parent / "sample_events.jsonl"
-    return p
+def _sample_paths() -> list[Path]:
+    """Every bundled sample file, so a replay can target either store.
+    sample_events.jsonl = store 1; events_store2_official.jsonl = store 2."""
+    data = Path(get_settings().store_layout_path).parent
+    return [p for p in (data / "sample_events.jsonl",
+                        data / "events_store2_official.jsonl") if p.exists()]
 
 
 def _ts_of(e: dict):
@@ -35,16 +38,25 @@ def _ts_of(e: dict):
                     or e.get("queue_join_ts") or e.get("timestamp"))
 
 
-def _run(store_id: str, duration_s: float, steps: int) -> None:
+def _superseded(gen: int) -> bool:
+    """True once a newer replay (e.g. a store switch) has started — so this one bows out."""
+    return _STATE["gen"] != gen
+
+
+def _run(store_id: str, duration_s: float, gen: int) -> None:
     try:
-        path = _sample_path()
-        if not path.exists():
+        paths = _sample_paths()
+        if not paths:
             return
-        evs = [json.loads(l) for l in path.read_text(encoding="utf-8").splitlines() if l.strip()]
+        evs: list[dict] = []
+        for path in paths:
+            evs += [json.loads(l) for l in path.read_text(encoding="utf-8").splitlines() if l.strip()]
         # keep only events that belong to the requested store (after id canonicalisation)
         evs = [e for e in evs
                if canon_store(str(e.get("store_code") or e.get("store_id") or "")) == store_id]
         evs.sort(key=lambda e: (_ts_of(e) or 0))
+        if _superseded(gen):
+            return
         _STATE.update(total=len(evs), sent=0)
         if not evs:
             return
@@ -53,28 +65,38 @@ def _run(store_id: str, duration_s: float, steps: int) -> None:
         with SessionLocal() as db:
             db.query(Event).filter(Event.store_id == store_id).delete()
             db.commit()
-        baseline = path.parent / "baseline_events.jsonl"
+        baseline = paths[0].parent / "baseline_events.jsonl"
         if baseline.exists():
             rows = [json.loads(l) for l in baseline.read_text(encoding="utf-8").splitlines() if l.strip()]
             with SessionLocal() as db:
                 ingest_events(db, rows)
                 db.commit()
-        per = max(1, len(evs) // max(1, steps))
-        for i in range(0, len(evs), per):
-            chunk = evs[i:i + per]
+        # Spread events evenly across duration_s (≈30 visible updates) so a small
+        # store and a large one both animate over the same wall-clock window,
+        # instead of a 29-event store bursting through in a couple of seconds.
+        n = len(evs)
+        steps = min(n, 30)
+        per = -(-n // steps)                 # ceil(n / steps)
+        interval = duration_s / steps
+        for i in range(0, n, per):
+            if _superseded(gen):
+                return
             with SessionLocal() as db:
-                ingest_events(db, chunk)
+                ingest_events(db, evs[i:i + per])
                 db.commit()
-            _STATE["sent"] = min(len(evs), i + per)
-            time.sleep(duration_s / steps)
+            _STATE["sent"] = min(n, i + per)
+            time.sleep(interval)
     finally:
-        _STATE["running"] = False
+        if not _superseded(gen):
+            _STATE["running"] = False
 
 
-def start_replay(store_id: str, duration_s: float = 20.0, steps: int = 25) -> dict:
+def start_replay(store_id: str, duration_s: float = 18.0) -> dict:
+    """Start (or preempt any in-flight) replay for store_id. A new call always wins,
+    so switching stores in the dashboard immediately restarts the animation."""
     with _LOCK:
-        if _STATE["running"]:
-            return {"status": "already_running", **status()}
+        _STATE["gen"] += 1
+        gen = _STATE["gen"]
         _STATE.update(running=True, store=store_id, sent=0, total=0)
-    threading.Thread(target=_run, args=(store_id, duration_s, steps), daemon=True).start()
+    threading.Thread(target=_run, args=(store_id, duration_s, gen), daemon=True).start()
     return {"status": "started", "store": store_id}

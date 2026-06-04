@@ -1,0 +1,81 @@
+/* purplle · Store Intelligence — shared brand theme.
+   Emulates the purplle.com look (purple→pink brand, white surfaces, soft rounded
+   cards, friendly sans) but is 100% self-contained: no web fonts, no CDNs, no
+   remote images — so the dashboard keeps working fully offline (challenge gate).
+   Linked by BOTH the landing (index.html) and the dashboard (dashboard.html). */
+:root {
+  --brand: #8a1a9b;          /* purplle purple */
+  --brand-deep: #5d0e73;     /* deep purple — gradient end / hover */
+  --brand-bright: #b3179e;   /* mid magenta */
+  --pink: #e6308a;           /* pink accent */
+  --grad: linear-gradient(120deg, #7a1290 0%, #a51b96 45%, #e6308a 100%);
+  --grad-soft: linear-gradient(120deg, #faf0fb 0%, #fdeef6 100%);
+
+  --ink: #2a1730;            /* headings */
+  --body: #4d3f55;           /* body text */
+  --muted: #7d6f86;
+  --faint: #a99fb0;
+  --bg: #faf6fc;             /* lavender-white app background */
+  --panel: #ffffff;
+  --line: #efe3f3;           /* hairline */
+  --track: #f1e8f5;          /* progress-bar track */
+
+  --ok: #1c9c5b; --warn: #c47a0a; --crit: #d6286b; --info: #8a1a9b;
+  --radius: 16px; --radius-sm: 10px;
+  --shadow: 0 1px 2px rgba(90,20,100,.05), 0 8px 24px rgba(90,20,100,.06);
+  --shadow-lg: 0 14px 44px rgba(90,20,100,.16);
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--body); font-family: var(--sans);
+  font-size: 15px; line-height: 1.5; -webkit-font-smoothing: antialiased;
+}
+a { color: var(--brand); text-decoration: none; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+
+/* a thin brand strip across the very top of every page */
+.brandbar { height: 4px; background: var(--grad); }
+
+/* purplle wordmark — text-only logo lookalike (stays offline) */
+.wordmark { display: inline-block; font-weight: 800; font-size: 23px; letter-spacing: -.5px;
+            color: var(--brand); line-height: 1; }
+.wordmark .dotp { color: var(--pink); }
+.wordmark .tag { display: block; font-size: 9.5px; font-weight: 700; letter-spacing: 2.5px;
+                 text-transform: uppercase; color: var(--faint); margin-top: 3px; }
+
+/* gradient-filled text accent */
+.gradtext { background: var(--grad); -webkit-background-clip: text; background-clip: text;
+            -webkit-text-fill-color: transparent; color: var(--brand); }
+
+/* buttons */
+.btn { display: inline-flex; align-items: center; gap: 8px; font: inherit; font-weight: 700;
+       font-size: 14px; cursor: pointer; border: none; border-radius: 999px; padding: 11px 22px;
+       color: #fff; background: var(--grad); box-shadow: 0 6px 18px rgba(138,26,155,.32);
+       transition: transform .12s ease, box-shadow .12s ease; }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 10px 26px rgba(138,26,155,.42); }
+.btn.big { font-size: 15.5px; padding: 14px 28px; }
+.btn.ghost { background: #fff; color: var(--brand); box-shadow: none; border: 1.5px solid var(--line); }
+.btn.ghost:hover { border-color: var(--brand); transform: none; }
+
+/* shared top bar */
+.topbar { background: #fff; border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 30; }
+.topbar .row { display: flex; align-items: center; justify-content: space-between;
+               gap: 16px; padding: 13px 0; flex-wrap: wrap; }
+
+/* card */
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+        padding: 20px 22px; box-shadow: var(--shadow); }
+
+/* status chip */
+.chip { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700;
+        padding: 6px 12px; border-radius: 999px; background: #fff; border: 1px solid var(--line);
+        color: var(--muted); }
+.chip .led { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.chip.live { color: var(--ok); background: #eafaf1; border-color: #bfe9d2; }
+.chip.stale { color: var(--crit); background: #fdecf3; border-color: #f5c6db; }
+
+footer.site { color: var(--faint); font-size: 12.5px; padding: 26px 0 40px; }
+footer.site code { background: #f3e8f6; color: var(--brand); padding: 1px 6px; border-radius: 4px; }

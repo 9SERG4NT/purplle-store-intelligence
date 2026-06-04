@@ -32,21 +32,25 @@ def _ts(e: dict) -> datetime:
     return datetime.fromisoformat(str(raw).replace("Z", "+00:00").replace("+00:00", ""))
 
 
-def replay(api: str, events_path: Path, speed: float, batch: int) -> None:
+def replay(api: str, events_paths: list[Path], speed: float, batch: int) -> None:
     # ingest prior-day baseline first (instant, no delay) so /anomalies has history
-    baseline = events_path.parent / "baseline_events.jsonl"
+    baseline = events_paths[0].parent / "baseline_events.jsonl"
     if baseline.exists():
         rows = [json.loads(l) for l in baseline.read_text(encoding="utf-8").splitlines() if l.strip()]
         for i in range(0, len(rows), 200):
             httpx.post(f"{api}/events/ingest", json={"events": rows[i:i + 200]}, timeout=30.0)
         print(f"seeded {len(rows)} baseline (prior-day) events")
 
-    events = [json.loads(l) for l in events_path.read_text(encoding="utf-8").splitlines() if l.strip()]
+    # merge one or more event files (e.g. store 1 + store 2) into a single time-ordered stream
+    events: list[dict] = []
+    for p in events_paths:
+        events += [json.loads(l) for l in p.read_text(encoding="utf-8").splitlines() if l.strip()]
     events.sort(key=_ts)
     if not events:
         print("no events to replay")
         return
-    print(f"replaying {len(events)} events from {events_path.name} at {speed}x -> {api}")
+    names = ", ".join(p.name for p in events_paths)
+    print(f"replaying {len(events)} events from {names} at {speed}x -> {api}")
 
     t0 = _ts(events[0])
     wall0 = time.perf_counter()
@@ -81,12 +85,16 @@ def replay(api: str, events_path: Path, speed: float, batch: int) -> None:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--api", default="http://localhost:8000")
-    ap.add_argument("--events", default=None)
+    ap.add_argument("--events", default=None,
+                    help="JSONL event file(s); comma-separate several (e.g. store 1 + store 2)")
     ap.add_argument("--speed", type=float, default=30.0, help="time-compression factor")
     ap.add_argument("--batch", type=int, default=25)
     args = ap.parse_args()
-    path = Path(args.events) if args.events else _default_events()
-    replay(args.api, path, args.speed, args.batch)
+    if args.events:
+        paths = [Path(p.strip()) for p in args.events.split(",") if p.strip()]
+    else:
+        paths = [_default_events()]
+    replay(args.api, paths, args.speed, args.batch)
 
 
 if __name__ == "__main__":

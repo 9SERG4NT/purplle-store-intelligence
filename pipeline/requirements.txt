@@ -1,10 +1,11 @@
 # ---- Detection pipeline (Part A) — runs on the HOST, not in the API container ----
 # Heavy CV deps are deliberately isolated here so the API image stays small.
-ultralytics==8.3.58       # YOLOv8 detection + built-in ByteTrack tracker
-opencv-python==4.10.0.84  # video I/O, HSV histograms for Re-ID / staff heuristic
-numpy==1.26.4
-lap==0.5.12               # required by ByteTrack association
+ultralytics>=8.4.0        # YOLO26 detection (NMS-free) + built-in ByteTrack tracker
+opencv-python==4.10.0.84  # video I/O, HSV histograms for the Re-ID fallback / staff heuristic
+numpy>=2.2.0
+lap>=0.5.12               # required by ByteTrack association
 httpx==0.28.1             # optional: stream events straight into the API
 imageio==2.36.1           # annotate.py: write processed-replay videos
 imageio-ffmpeg==0.5.1     # bundles ffmpeg for browser-playable H.264
+boxmot>=19.0.0            # OSNet deep Re-ID embeddings (optional; auto-fallback to HSV if absent)
 # torch / torchvision come in transitively via ultralytics (CPU build is fine for these short clips)

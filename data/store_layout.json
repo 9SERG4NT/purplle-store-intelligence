@@ -14,9 +14,9 @@
       "role": "entry",
       "fps_sample": 6,
       "clip_start_local": "2026-04-10T20:20:00+05:30",
-      "description": "Entry/exit threshold (overhead). Foot traffic crosses the glass walkway on the right moving vertically; the counting line is horizontal across that walkway. Inbound = moving DOWN into the store floor (toward higher y), calibrated from foot-trajectory analysis (scripts/_diag_entry.py).",
-      "entry_line": [[0.55, 0.70], [1.0, 0.70]],
-      "inside_point": [0.82, 0.97],
+      "description": "Entry/exit threshold (overhead corner). Foot-trajectory analysis shows traffic moves VERTICALLY down the entrance lane on the right (dY~+0.5), so the counting line must cut ACROSS that motion (a tripwire is perpendicular to travel). A purely vertical line parallel to the lane counts nobody (verified: 0). This line is a DIAGONAL across the lane (upper-left to lower-right), separating the entrance side from the store side, and is crossed as a visitor walks down into the store. Inbound = moving DOWN/into the store (toward inside_point).",
+      "entry_line": [[0.48, 0.55], [1.0, 0.70]],
+      "inside_point": [0.85, 0.99],
       "zones": ["ENTRY"]
     },
     {

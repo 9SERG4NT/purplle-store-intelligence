@@ -58,10 +58,16 @@ class Tracklet:
 
 
 def descriptor_similarity(a: Optional[list[float]], b: Optional[list[float]]) -> float:
-    """Pearson correlation of two histograms, clamped to [0, 1].
+    """Pearson correlation of two descriptor vectors, clamped to [0, 1].
 
-    Mirrors OpenCV's HISTCMP_CORREL but in pure numpy-free Python so the
-    association engine has no binary dependencies.
+    Mirrors OpenCV's HISTCMP_CORREL for the default HSV colour histogram, in pure
+    numpy-free Python so the association engine has no binary dependencies. (Also
+    serves the opt-in OSNet embedding path — Pearson is mean-centred cosine.)
+
+    Chosen over plain cosine after measuring both on this footage: the HSV
+    histogram gives a stable visitor count, whereas the OSNet embedding had no
+    clean same/different separation on overhead, blurred-face crops (count swung
+    9->61 across thresholds with no plateau) — see CHOICES.md.
     """
     if not a or not b or len(a) != len(b):
         return 0.0

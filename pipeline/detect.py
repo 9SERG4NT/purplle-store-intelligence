@@ -20,9 +20,10 @@ import cv2
 import numpy as np
 
 from appearance import appearance_descriptor, dark_fraction
+import reid
 from config import CONFIG
 from emit import EventWriter
-from geometry import crossing_direction, foot_point, point_in_polygon
+from geometry import side_of, foot_point, point_in_polygon
 from layout import Camera, StoreLayout, get_layout
 from associate import SessionManager
 from tracklets import Crossing, Tracklet, ZoneInterval
@@ -43,6 +44,7 @@ class _TrackState:
     rep_area: float = 0.0
     rep_crop: Optional[np.ndarray] = None  # largest person crop, for the optional VLM
     prev_foot: Optional[tuple[float, float]] = None
+    line_side: Optional[int] = None  # committed side of the entry line (+1/-1) for hysteresis
     last_cross_ts: Optional[datetime] = None
     cur_zone: Optional[str] = None
     zone_enter_ts: Optional[datetime] = None
@@ -121,24 +123,33 @@ def process_camera(cam: Camera, video_path: Path, layout: StoreLayout, model) ->
                 if cam.staff_region and point_in_polygon(fp, cam.staff_region):
                     st.behind_counter_n += 1
 
-                # keep the largest person crop for the optional VLM staff check
-                if CONFIG.use_vlm_staff:
+                # keep the largest person crop — used for the OSNet Re-ID embedding
+                # and (optionally) the VLM staff check.
+                if CONFIG.use_osnet_reid or CONFIG.use_vlm_staff:
                     x1, y1, x2, y2 = [int(v) for v in box]
                     area = max(0, x2 - x1) * max(0, y2 - y1)
                     if area > st.rep_area and (x2 > x1) and (y2 > y1):
                         st.rep_area = area
                         st.rep_crop = frame[max(0, y1):y2, max(0, x1):x2].copy()
 
-                # entry-line crossings (debounced to ignore jitter near the line)
-                if cam.entry_line and cam.inside_point and st.prev_foot is not None:
-                    direction = crossing_direction(
-                        cam.entry_line[0], cam.entry_line[1], cam.inside_point, st.prev_foot, fp)
-                    if direction:
-                        recent = (st.last_cross_ts is not None and
-                                  (ts - st.last_cross_ts).total_seconds() < CONFIG.crossing_debounce_seconds)
-                        if not recent:
-                            st.crossings.append(Crossing(t=ts, direction=direction))
-                            st.last_cross_ts = ts
+                # entry-line crossings via stateful hysteresis: a track stays committed
+                # to one side until its feet clearly reach the other side (> crossing_margin),
+                # so a *gradual* walker counts once and on-the-line jitter is ignored. This
+                # is the "count only when fully entered" rule. Debounced as a second guard.
+                if cam.entry_line and cam.inside_point:
+                    cur_side = side_of(cam.entry_line[0], cam.entry_line[1], fp, CONFIG.crossing_margin)
+                    if cur_side != 0:
+                        if st.line_side is None:
+                            st.line_side = cur_side
+                        elif cur_side != st.line_side:
+                            inside_side = side_of(cam.entry_line[0], cam.entry_line[1], cam.inside_point)
+                            direction = "inbound" if cur_side == inside_side else "outbound"
+                            recent = (st.last_cross_ts is not None and
+                                      (ts - st.last_cross_ts).total_seconds() < CONFIG.crossing_debounce_seconds)
+                            if not recent:
+                                st.crossings.append(Crossing(t=ts, direction=direction))
+                                st.last_cross_ts = ts
+                            st.line_side = cur_side
                 st.prev_foot = fp
 
                 # zone membership transitions
@@ -159,7 +170,10 @@ def process_camera(cam: Camera, video_path: Path, layout: StoreLayout, model) ->
         _close_zone(st, st.t_end, layout, cam.camera_id)
         if st.n_frames == 0:
             continue
-        desc = (st.desc_sum / st.desc_n).tolist() if (st.desc_sum is not None and st.desc_n) else None
+        # identity descriptor: OSNet embedding of the best crop, with HSV histogram fallback
+        desc = reid.embed_crop(st.rep_crop) if CONFIG.use_osnet_reid else None
+        if desc is None and st.desc_sum is not None and st.desc_n:
+            desc = (st.desc_sum / st.desc_n).tolist()
         if CONFIG.use_vlm_staff and st.rep_crop is not None:
             crop_dir = Path(__file__).resolve().parent.parent / "data" / "_vlm_crops"
             crop_dir.mkdir(parents=True, exist_ok=True)

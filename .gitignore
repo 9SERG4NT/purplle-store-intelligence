@@ -20,6 +20,13 @@ yolo*.pt
 # ---- Pipeline outputs ----
 data/events*.jsonl
 data/events*.json
+# ...but the store-2 official event log IS a committed deliverable: it's the
+# store-2 half of the submission event stream and docker-compose seeds it on boot.
+# (data/sample_events.jsonl — the store-1 log — is committed too; it doesn't match
+# the events* pattern above.) Un-ignore it so a clean clone has both stores.
+!data/events_store2_official.jsonl
+# per-camera live-readout sidecars rendered next to the annotated mp4s (footage-derived)
+dashboard/media/*.json
 data/_vlm_crops/
 data/_zonecheck/
 _calib/

@@ -41,12 +41,12 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  # One-shot: streams sample_events.jsonl into the API in simulated real time so the
-  # dashboard shows live data on first boot. Idempotent (ingest dedups by event_id).
+  # One-shot: streams both stores' sample events into the API in simulated real time
+  # so the dashboard shows live data on first boot. Idempotent (ingest dedups by event_id).
   seed:
     build: .
     command: ["python", "scripts/replay.py", "--api", "http://api:8000", "--speed", "90",
-              "--events", "data/sample_events.jsonl"]
+              "--events", "data/sample_events.jsonl,data/events_store2_official.jsonl"]
     volumes:
       - ./data:/app/data
       - ./scripts:/app/scripts:ro

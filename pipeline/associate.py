@@ -103,7 +103,7 @@ class SessionManager:
             )
             # Cross-camera appearance is noisier (different angle/lighting) -> relax threshold.
             same_ok = same >= CONFIG.appearance_match_threshold
-            cross_ok = cross >= CONFIG.appearance_match_threshold * 0.72
+            cross_ok = cross >= CONFIG.appearance_match_threshold * CONFIG.cross_camera_match_factor
             sim = max(same, cross)
             if (same_ok or cross_ok) and sim > best_sim:
                 best_sim = sim

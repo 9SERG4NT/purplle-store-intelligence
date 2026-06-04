@@ -66,7 +66,7 @@ def compute_anomalies(db: DbSession, store_id: str, date_str: str | None = None)
         zid: meta.get("last_visit") for zid, meta in data.zone_meta.items()
     }
     if is_known_store(store_id):
-        for z in analytics_zones():
+        for z in analytics_zones(store_id):
             if z["zone_id"] != "BILLING":
                 candidates.setdefault(z["zone_id"], None)
     for zid, lv in candidates.items():

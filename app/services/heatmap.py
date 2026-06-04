@@ -41,7 +41,7 @@ def compute_heatmap(db: DbSession, store_id: str, date_str: str | None = None) -
     for zid, meta in data.zone_meta.items():
         names[zid] = meta.get("name") or zid
         depts[zid] = "revenue" if meta.get("is_revenue") else "non-revenue"
-    for z in analytics_zones():
+    for z in analytics_zones(store_id):
         names.setdefault(z["zone_id"], z["name"])
         depts.setdefault(z["zone_id"], z["department"])
 

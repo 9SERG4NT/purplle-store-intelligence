@@ -1,6 +1,67 @@
 // Live dashboard: polls the Store Intelligence API and re-renders every 1.5s.
-const STORE = new URLSearchParams(location.search).get("store") || "STORE_BLR_002";
+// Two stores are wired in; each has its own annotated replay cameras (media/*.mp4
+// + a media/*.json sidecar of per-frame counts that drives the live readout).
+const STORES = {
+  STORE_BLR_002: {
+    label: "STORE_BLR_002 — Brigade Road, Bangalore",
+    cams: [
+      { file: "cam_entry_01", cam: "CAM 3", name: "Entry / exit", role: "entry" },
+      { file: "cam_floor_01", cam: "CAM 1", name: "Floor · skincare", role: "floor" },
+      { file: "cam_floor_02", cam: "CAM 2", name: "Floor · makeup", role: "floor" },
+      { file: "cam_billing_01", cam: "CAM 5", name: "Billing", role: "billing" },
+      { file: "cam_back_01", cam: "CAM 4", name: "Back room", role: "backroom" },
+    ],
+  },
+  STORE_BLR_009: {
+    label: "STORE_BLR_009 — Second store (extra clips)",
+    cams: [
+      { file: "cam_entry_a", cam: "Entry 1", name: "Entry / exit", role: "entry" },
+      { file: "cam_entry_b", cam: "Entry 2", name: "Entry / exit", role: "entry" },
+      { file: "cam_billing_a", cam: "Billing", name: "Checkout", role: "billing" },
+      { file: "cam_floor_a", cam: "Zone", name: "Floor · shelf aisle", role: "floor" },
+    ],
+  },
+};
+
+// Per-role view: which icon, what the camera does, which live stats to show, and
+// which store-wide metric it feeds — so each camera reads as its own mini-dashboard.
+const ROLE_INFO = {
+  entry: {
+    icon: "\u{1F6AA}", title: "Entry / exit",
+    stats: [["entries", "Entries in", true], ["exits", "Exits out", false], ["persons", "On screen", false]],
+    blurb: "Counts people crossing the door <b>tripwire</b> (red line, IN arrow = into the store). Inbound crossings feed <b>Unique visitors</b> and the top of the funnel.",
+  },
+  floor: {
+    icon: "\u{1F6CD}", title: "Sales floor",
+    stats: [["persons", "On screen", true]],
+    blurb: "Tracks browsing inside the product zones. Time spent here drives the <b>Zone heatmap</b> and the &ldquo;Browsed a zone&rdquo; funnel step.",
+  },
+  billing: {
+    icon: "\u{1F4B3}", title: "Billing counter",
+    stats: [["queue", "In queue now", true], ["persons", "On screen", false]],
+    blurb: "Watches the checkout queue (orange box). Queue depth feeds the <b>Queue</b> KPI and &ldquo;Reached billing&rdquo;; people who leave the line feed <b>Abandonment</b>.",
+  },
+  backroom: {
+    icon: "\u{1F4E6}", title: "Back room",
+    stats: [["persons", "On screen", true]],
+    blurb: "Stock area, not customer-facing. Anyone detected here is treated as <b>staff</b> and excluded from visitor counts.",
+  },
+};
+const STORE = STORES[new URLSearchParams(location.search).get("store")]
+  ? new URLSearchParams(location.search).get("store") : "STORE_BLR_002";
 const API = ""; // same origin as the mounted dashboard
+
+// ---- store switcher: rebuild on change, reload with ?store= ----
+const storeSel = document.getElementById("storeSel");
+if (storeSel) {
+  storeSel.innerHTML = Object.entries(STORES)
+    .map(([id, s]) => `<option value="${id}" ${id === STORE ? "selected" : ""}>${id}</option>`).join("");
+  storeSel.addEventListener("change", () => {
+    location.search = "?store=" + encodeURIComponent(storeSel.value);
+  });
+}
+const storeLineEl = document.getElementById("storeLine");
+if (storeLineEl && STORES[STORE]) storeLineEl.textContent = STORES[STORE].label;
 let prevVisitors = null;
 
 const $ = (id) => document.getElementById(id);
@@ -105,25 +166,77 @@ async function tick() {
   }
 }
 
-// ---- processed-footage replay (annotated MP4s rendered by pipeline/annotate.py) ----
-const camSel = document.getElementById("camSel");
+// ---- camera view: annotated MP4 + a live readout that ticks with the playhead ----
+// Each MP4 has a sibling media/<cam>.json sidecar (rendered by pipeline/annotate.py):
+// per-output-frame running counts. We map video.currentTime -> frame index and mirror
+// that frame's counts as HTML, so the dashboard is dynamic in lock-step with the video.
+const camTabs = document.getElementById("camTabs");
 const camVideo = document.getElementById("camVideo");
 const vidHint = document.getElementById("vidHint");
-let _vidTimer = null;
-function loadCam() {
-  vidHint.hidden = true;                       // never show while (re)loading
-  camVideo.src = `media/${camSel.value}.mp4`;
+const camStrip = document.getElementById("camStrip");
+const camBlurb = document.getElementById("camBlurb");
+const camTitle = document.getElementById("camTitle");
+const camClock = document.getElementById("camClock");
+const CAMS = STORES[STORE] ? STORES[STORE].cams : [];
+let activeCam = 0;
+let camStats = null;  // sidecar for the active camera, or null if not rendered yet
+
+function renderCamReadout(c, sample) {
+  const info = ROLE_INFO[c.role] || ROLE_INFO.floor;
+  camStrip.innerHTML = info.stats.map(([key, label, accent]) => {
+    const v = sample ? sample[key] : null;
+    return `<div class="cstat"><div class="cv ${accent ? "accent" : ""}">${v == null ? "—" : v}</div>
+      <div class="cl">${label}</div></div>`;
+  }).join("");
+  let blurb = info.blurb;
+  if (camStats && camStats.zones && camStats.zones.length && c.role === "floor") {
+    blurb += ` &middot; in view: <b>${camStats.zones.join(", ")}</b>`;
+  }
+  camBlurb.innerHTML = blurb;
+  camClock.textContent = sample && sample.clock ? sample.clock : "";
+}
+
+function tickCamReadout() {
+  if (!camStats || !camStats.samples || !camStats.samples.length) return;
+  const fps = camStats.fps || 6;
+  let i = Math.round(camVideo.currentTime * fps);
+  i = Math.max(0, Math.min(camStats.samples.length - 1, i));
+  renderCamReadout(CAMS[activeCam], camStats.samples[i]);
+}
+
+async function loadCam(i) {
+  activeCam = i;
+  const c = CAMS[i];
+  const info = ROLE_INFO[c.role] || ROLE_INFO.floor;
+  camTitle.textContent = `${info.icon} ${c.cam} · ${info.title}`;
+  [...camTabs.children].forEach((b, j) => b.classList.toggle("active", j === i));
+  vidHint.hidden = true;
+  camVideo.src = `media/${c.file}.mp4`;
   camVideo.load();
   camVideo.play().catch(() => {});
-  clearTimeout(_vidTimer);
-  // only surface the hint if, after 6s, the video genuinely hasn't loaded a frame
-  _vidTimer = setTimeout(() => { if (camVideo.readyState === 0) vidHint.hidden = false; }, 6000);
+  camStats = null;
+  renderCamReadout(c, null);          // labels now, values fill once the sidecar loads
+  try { camStats = await getJSON(`media/${c.file}.json`); } catch { camStats = null; }
+  tickCamReadout();
 }
-// any sign of playback hides the hint for good
-["loadeddata", "canplay", "playing", "timeupdate"].forEach((ev) =>
-  camVideo.addEventListener(ev, () => { vidHint.hidden = true; clearTimeout(_vidTimer); }));
-camSel.addEventListener("change", loadCam);
-loadCam();
+
+// build the tab bar (one button per camera, labelled by what it watches)
+camTabs.innerHTML = CAMS.map((c, i) => {
+  const info = ROLE_INFO[c.role] || ROLE_INFO.floor;
+  return `<button class="camtab ${i === 0 ? "active" : ""}" data-i="${i}">
+    <span class="ci">${info.icon}</span>${c.cam} · ${c.name}</button>`;
+}).join("");
+camTabs.addEventListener("click", (e) => {
+  const b = e.target.closest(".camtab");
+  if (b) loadCam(Number(b.dataset.i));
+});
+
+camVideo.addEventListener("timeupdate", tickCamReadout);
+// Show the "render replays" hint only on a genuine load failure; any successful load hides it.
+camVideo.addEventListener("error", () => { vidHint.hidden = false; });
+["loadedmetadata", "loadeddata", "canplay", "playing"].forEach((ev) =>
+  camVideo.addEventListener(ev, () => { vidHint.hidden = true; }));
+if (CAMS.length) loadCam(0);
 
 // ---- live replay: reset the store + re-stream so KPIs climb from zero ----
 const replayBtn = document.getElementById("replayBtn");

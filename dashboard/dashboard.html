@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>purplle · Store Intelligence — Live dashboard</title>
+  <link rel="stylesheet" href="theme.css" />
+  <style>
+    /* ---- dashboard-specific styles (Purplle theme tokens from theme.css) ---- */
+    main { padding: 0 0 40px; }
+
+    .head-extra { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    select#storeSel { font: inherit; font-size: 13px; font-weight: 700; color: var(--brand);
+      background: #fff; border: 1.5px solid var(--line); border-radius: 999px; padding: 7px 14px; cursor: pointer; }
+    .replay { font: inherit; font-weight: 700; font-size: 13px; cursor: pointer; color: #fff;
+      background: var(--grad); border: none; border-radius: 999px; padding: 8px 16px;
+      box-shadow: 0 6px 16px rgba(138,26,155,.3); }
+    .replay:hover { filter: brightness(1.06); }
+    .replay:disabled { opacity: .6; cursor: default; }
+    .loop { font-size: 12px; color: var(--muted); margin-left: 2px; cursor: pointer; user-select: none; }
+    .loop input { vertical-align: middle; }
+    .pill { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700;
+      padding: 6px 12px; border-radius: 999px; background: #fff; border: 1px solid var(--line); color: var(--muted); }
+    .pill .led { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .pill.live { color: var(--ok); background: #eafaf1; border-color: #bfe9d2; }
+    .pill.stale { color: var(--crit); background: #fdecf3; border-color: #f5c6db; }
+
+    .dashhead { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
+      margin: 18px 0 4px; flex-wrap: wrap; }
+    .storeline { color: var(--ink); font-size: 17px; font-weight: 800; letter-spacing: -.3px; }
+    .subline { color: var(--muted); font-size: 13px; margin-top: 3px; }
+    .updated { color: var(--faint); font-size: 11.5px; font-variant-numeric: tabular-nums; text-align: right; }
+
+    /* section header */
+    .sec { display: flex; align-items: center; gap: 12px; margin: 28px 0 14px; }
+    .sec h3 { font-size: 18px; font-weight: 800; color: var(--ink); margin: 0; letter-spacing: -.3px; }
+    .sec .scope { font-size: 12.5px; color: var(--faint); }
+    .sec .rule { flex: 1; height: 1px; background: var(--line); }
+
+    /* KPI cards */
+    .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .kpi { background: #fff; border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 18px 20px; box-shadow: var(--shadow); }
+    .kpi .label { color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .7px;
+      font-weight: 700; }
+    .kpi .value { font-size: 36px; font-weight: 800; margin-top: 8px; letter-spacing: -1px; color: var(--ink);
+      font-variant-numeric: tabular-nums; line-height: 1; }
+    .kpi .value.accent { background: var(--grad); -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent; }
+    .kpi .delta { font-size: 12.5px; color: var(--muted); margin-top: 7px; }
+    .kpi .hint { color: var(--faint); font-size: 11px; margin-top: 8px; }
+
+    /* content rows + cards (.card comes from theme.css) */
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+    h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: var(--brand);
+      font-weight: 800; margin: 0 0 14px; }
+    .cap { color: var(--muted); font-size: 12.5px; margin: -6px 0 14px; line-height: 1.45; }
+    .empty { color: var(--faint); font-size: 13.5px; }
+
+    /* funnel */
+    .funnel-stage { margin-bottom: 14px; }
+    .funnel-stage .top { display: flex; justify-content: space-between; align-items: baseline;
+      font-size: 14px; margin-bottom: 6px; }
+    .funnel-stage .top span:first-child { text-transform: capitalize; color: var(--ink); font-weight: 600; }
+    .bar { height: 11px; background: var(--track); border-radius: 7px; overflow: hidden; }
+    .bar > span { display: block; height: 100%; background: var(--grad); border-radius: 7px; }
+    .drop { color: var(--warn); font-size: 12px; font-variant-numeric: tabular-nums; }
+    .delta { font-size: 13px; color: var(--muted); margin: 2px 0; }
+    .delta b { color: var(--ink); font-weight: 700; }
+
+    /* heatmap */
+    .zone { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 13.5px; }
+    .zone .name { width: 140px; color: var(--muted); }
+    .zone .hb { flex: 1; height: 12px; background: var(--track); border-radius: 7px; overflow: hidden; }
+    .zone .hb > span { display: block; height: 100%; background: linear-gradient(90deg, var(--pink), var(--brand)); }
+    .zone .v { width: 40px; text-align: right; font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 600; }
+
+    /* anomalies */
+    .anom { border-left: 3px solid var(--faint); padding: 11px 14px; margin-bottom: 10px; background: #faf6fc;
+      border-radius: 0 10px 10px 0; font-size: 13.5px; }
+    .anom.WARN { border-color: var(--warn); background: #fdf6ea; }
+    .anom.CRITICAL { border-color: var(--crit); background: #fdecf3; }
+    .anom.INFO { border-color: var(--info); background: #f7f0fb; }
+    .anom .t { font-weight: 800; letter-spacing: .2px; color: var(--ink); }
+    .anom .a { color: var(--muted); margin-top: 3px; }
+
+    /* camera view */
+    .vidhead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .vidhead h2 { margin: 0; color: var(--ink); font-size: 16px; text-transform: none; letter-spacing: -.2px; }
+    .camclock { font-variant-numeric: tabular-nums; font-size: 13px; color: #f3e3fb; background: var(--brand-deep);
+      padding: 4px 12px; border-radius: 999px; font-weight: 700; }
+    .camtabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+    .camtab { font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; color: var(--muted);
+      background: #fff; border: 1.5px solid var(--line); border-radius: 999px; padding: 7px 14px;
+      display: inline-flex; align-items: center; gap: 6px; }
+    .camtab:hover { border-color: #e0bfea; color: var(--ink); }
+    .camtab.active { color: #fff; background: var(--grad); border-color: transparent;
+      box-shadow: 0 5px 14px rgba(138,26,155,.32); }
+    .camtab .ci { font-size: 14px; line-height: 1; }
+    .videowrap { position: relative; background: #1a0f1f; border-radius: 12px; overflow: hidden;
+      aspect-ratio: 854 / 480; }
+    .videowrap video { width: 100%; height: 100%; display: block; object-fit: contain; }
+    .vidhint { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      text-align: center; color: #e7d6ef; font-size: 13.5px; padding: 24px; }
+    .vidhint[hidden] { display: none; }
+    .vidhint code { background: #3a2440; color: #f3e6f8; padding: 2px 7px; border-radius: 4px; }
+    .camstrip { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+    .cstat { background: var(--grad-soft); border: 1px solid var(--line); border-radius: 12px;
+      padding: 13px 18px; flex: 1; min-width: 120px; }
+    .cstat .cv { font-size: 28px; font-weight: 800; letter-spacing: -.6px; font-variant-numeric: tabular-nums;
+      color: var(--ink); line-height: 1; }
+    .cstat .cv.accent { background: var(--grad); -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent; }
+    .cstat .cl { font-size: 11px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted);
+      font-weight: 700; margin-top: 5px; }
+    .camblurb { color: var(--muted); font-size: 13px; margin-top: 14px; line-height: 1.55; }
+    .camblurb b { color: var(--ink); font-weight: 700; }
+    .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 14px; font-size: 12px; color: var(--muted); }
+    .legend i { display: inline-block; width: 22px; height: 0; vertical-align: middle; margin-right: 5px; }
+    .legend .box { width: 13px; height: 13px; border: 2px solid #e0b341; border-radius: 3px; }
+    .legend .zone { width: 16px; height: 11px; border: 2px solid #b4b43c; background: rgba(180,180,60,.15); }
+    .legend .ln { border-top: 3px solid #e23b3b; }
+
+    .flash { animation: fl .7s ease; }
+    @keyframes fl { from { color: var(--pink); } to {} }
+
+    footer.dash { color: var(--faint); font-size: 12.5px; padding: 14px 0 10px; }
+    footer.dash code { background: #f3e8f6; color: var(--brand); padding: 1px 6px; border-radius: 4px; }
+
+    @media (max-width: 820px) {
+      .kpis { grid-template-columns: repeat(2, 1fr); }
+      .row { grid-template-columns: 1fr; }
+      .camstrip { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="brandbar"></div>
+
+  <div class="topbar"><div class="wrap row">
+    <a class="wordmark" href="index.html" title="Back to home" style="text-decoration:none">
+      purplle<span class="dotp">.</span><span class="tag">Store Intelligence</span></a>
+    <div class="head-extra">
+      <select id="storeSel" title="Switch store"></select>
+      <button id="replayBtn" class="replay">▶ Replay live</button>
+      <label class="loop"><input type="checkbox" id="loopChk" /> loop</label>
+      <span class="pill" id="feedPill">connecting…</span>
+    </div>
+  </div></div>
+
+  <main class="wrap">
+    <div class="dashhead">
+      <div>
+        <div class="storeline" id="storeLine">STORE_BLR_002 — Brigade Road, Bangalore</div>
+        <div class="subline">Footfall &amp; conversion computed from in-store CCTV · today's data, live as events stream in</div>
+      </div>
+      <div>
+        <div class="updated" id="updated"></div>
+        <div class="updated" id="windowLine"></div>
+      </div>
+    </div>
+
+    <div class="sec"><h3>Store overview</h3><span class="scope">whole store · live</span><span class="rule"></span></div>
+    <section class="kpis">
+      <div class="kpi"><div class="label">📈 Conversion rate</div>
+        <div class="value accent" id="conv">—</div><div class="delta" id="convd"></div>
+        <div class="hint">buyers ÷ unique visitors · the north-star metric</div></div>
+      <div class="kpi"><div class="label">🧑‍🤝‍🧑 Unique visitors</div>
+        <div class="value" id="visitors">—</div><div class="delta" id="staffd"></div>
+        <div class="hint">distinct shoppers today · staff removed</div></div>
+      <div class="kpi"><div class="label">⏱️ Queue depth</div>
+        <div class="value" id="queue">—</div><div class="delta" id="queued"></div>
+        <div class="hint">people at the billing counter now</div></div>
+      <div class="kpi"><div class="label">🚪 Abandonment</div>
+        <div class="value" id="abandon">—</div><div class="delta" id="purch"></div>
+        <div class="hint">left the queue without buying</div></div>
+    </section>
+
+    <div class="sec"><h3>Camera view</h3><span class="scope">one camera at a time · live counts track the video as it plays</span><span class="rule"></span></div>
+    <div class="card">
+      <div class="vidhead">
+        <h2 id="camTitle">Detection replay</h2>
+        <div class="camclock" id="camClock"></div>
+      </div>
+      <div class="cap">The actual computer-vision output — every person the pipeline detected and tracked, drawn back
+        onto the footage. Pick a camera below; the readout under the video is that camera's live count, in sync with the playhead.</div>
+      <div class="camtabs" id="camTabs"><!-- one button per camera, built by app.js --></div>
+      <div class="videowrap">
+        <video id="camVideo" controls autoplay muted loop playsinline></video>
+        <div class="vidhint" id="vidHint" hidden>
+          Processed replay for this camera isn't rendered yet. Generate them with<br>
+          <code>python pipeline/annotate.py</code><br>then refresh.
+        </div>
+      </div>
+      <div class="camstrip" id="camStrip"><!-- live per-camera stats, built by app.js --></div>
+      <div class="camblurb" id="camBlurb"></div>
+      <div class="legend">
+        <span><i class="box"></i>person + track #</span>
+        <span><i class="zone"></i>product zone</span>
+        <span><i class="ln"></i>entry line + IN arrow</span>
+        <span>dim scene · detected people are spotlit</span>
+      </div>
+    </div>
+
+    <div class="sec"><h3>Store analytics</h3><span class="scope">whole store · where shoppers go and where it breaks</span><span class="rule"></span></div>
+    <div class="row">
+      <div class="card"><h2>Conversion funnel</h2>
+        <div class="cap">Where shoppers drop off: entered the store → browsed a zone → reached billing → bought. Bars shrink left-to-right.</div>
+        <div id="funnel"></div></div>
+      <div class="card"><h2>Zone heatmap · visits</h2>
+        <div class="cap">Which product zones pull the most footfall. Longer bar = more visitors stood there.</div>
+        <div id="heatmap"></div></div>
+    </div>
+
+    <div class="row">
+      <div class="card"><h2>Active anomalies</h2>
+        <div class="cap">Operational alerts an on-call manager would act on (queue spike, dead zone, conversion drop).</div>
+        <div id="anomalies"></div></div>
+      <div class="card"><h2>Feed health</h2>
+        <div class="cap">Is the camera feed still flowing? Goes STALE if no events arrive for 10 min.</div>
+        <div id="health"></div></div>
+    </div>
+
+    <footer class="dash">Polling the Store Intelligence API every 1.5s · run
+      <code>python scripts/replay.py</code> to stream events live · <a href="index.html">← back to home</a></footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

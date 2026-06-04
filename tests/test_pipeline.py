@@ -66,6 +66,17 @@ def test_descriptor_similarity():
     assert descriptor_similarity(None, SIG["a"]) == 0.0
 
 
+def test_reid_disabled_falls_back_to_none():
+    # OSNet Re-ID is OFF by default (measured: no stable threshold on this overhead/
+    # blurred footage — see CHOICES.md). embed_crop must then return None so the
+    # pipeline falls back to the HSV histogram. This is the contract a clean clone
+    # (no boxmot/weights) relies on to run with zero extra deps.
+    import numpy as np
+    import reid
+    assert reid.embed_crop(None) is None
+    assert reid.embed_crop(np.zeros((24, 16, 3), dtype=np.uint8)) is None
+
+
 # ---- POS normalisation ------------------------------------------------------
 
 def test_pos_normalise_collapses_skus_to_orders(tmp_path):
