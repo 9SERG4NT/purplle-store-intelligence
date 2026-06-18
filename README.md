@@ -1,12 +1,3 @@
----
-title: Store Intelligence Dashboard
-emoji: 🛍️
-colorFrom: purple
-colorTo: pink
-sdk: docker
-pinned: false
----
-<div align="center">
 
 # purplle · Store Intelligence System
 
