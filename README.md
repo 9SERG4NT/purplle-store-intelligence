@@ -13,7 +13,7 @@
 
 **Built for the Purplle Tech Challenge 2026 · Round 2**
 
-[🚀 Live Demo](https://purplle-store-intelligence.netlify.app) · [📖 Design Doc](docs/DESIGN.md) · [🔍 API Docs](https://purplle-store-intelligence.netlify.app/docs) · [⚙️ Choices](docs/CHOICES.md)
+[🚀 Live Demo](https://huggingface.co/spaces/SERG4NT/store-intelligence-dashboard) · [📖 Design Doc](docs/DESIGN.md) · [🔍 API Docs](https://purplle-store-intelligence.netlify.app/docs) · [⚙️ Choices](docs/CHOICES.md)
 
 </div>
 
